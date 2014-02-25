@@ -8,6 +8,8 @@ var gridSize = 100;
 var numBlocksVertical;
 var numBlocksHorizontal;
 
+var introInfoGroup;
+
 var timeMarkerUpdateBgTextGroup = 0;
 var timeMarkerMoveBlueSquares = 0;
 var timeMarkerMovePrizes = 0;
@@ -18,7 +20,7 @@ var maxGameLevelTime = 100;
 var maxHealthShooter = 5;
 
 var gameLevelTimer;
-var gameOver = false;
+var gameOver = true;
 
 var boxReflector1;
 var triangleReflector1;
@@ -101,6 +103,8 @@ game_state.main.prototype = {
 	},
 
 	create: function() {
+
+		gameOver = true;
 
 		numBlocksVertical = Math.floor(game.world.height/gridSize) - 2;
 		numBlocksHorizontal = Math.floor(game.world.width/gridSize) -3;
@@ -233,8 +237,7 @@ game_state.main.prototype = {
 
 		shooter1 = game.add.sprite(game.world.centerX, 50, "shooter1");
 		shooter1.anchor.setTo(0.5,0.5);
-
-
+		shooter1.visible = false;
 
 		// --
 		rightLimitX = game.world.width - shooter1.width/2 - shooter1.width;
@@ -253,11 +256,26 @@ game_state.main.prototype = {
     finalScoreText.anchor.setTo(0.5,0.5);
     finalScoreText.visible = false;
 
-    restartGame(true); // start/restart level (i.e. sets the health point to full and the score to zero)
+    introInfoGroup = game.add.group();
+    //var  = game.add.graphics();
+    introText = game.add.text( 
+    	game.world.centerX, game.world.centerY, 
+    	"Welcome to LASER REFLECTOR!!!\n"
+    	+ "Press '\\' for fullscreen (recommended).\n"
+    	+ "Press SPACEBAR to fire laser.\n"
+    	+ "Try to hit the green boxes without\n"
+    	+ "hitting the blue reflector boxes.\n"
+    	+ "Watch out for the triangle reflectors!\n"
+    	+ "Note you only have "+maxGameLevelTime+" seconds of time\n"
+    	+ "and are limited to "+maxHealthShooter+" lives.", 
+    	style );
+    introText.anchor.setTo(0.5,0.5);
+    introInfoGroup.add( introText );
 
-		timeMarkerMoveBlueSquares = game.time.now + 10000;
-		timeMarkerMovePrizes = game.time.now + 20000;
-		timeMarkerTweakTriangles = game.time.now + 15000;
+		// game.time.events.add(1000, function(){
+		// 	healthText.setText( totalHealthShooter );
+		// 	scoreText.setText( totalPrizeHits );
+		// }, this);
 
 	},
 
@@ -409,6 +427,10 @@ function fixSnapLocationReflector( reflectorSprite ) {
 }
 
 function fireButtonPressed() {
+
+	// since the SPACEBAR is used to start the gameplay (as well as shooting the laser)
+	// we need to do a few checks to decide if we need to restart the game 
+	// or to shoot the laser.
 	if ( gameOver || shooterDead ) {
 		if ( !gameOver ) return; // ignore the fire button right now
 		if ( game.time.now > timeMarkerGameOver ) {
@@ -538,27 +560,43 @@ function gameLevelTimeout() {
 	game.add.tween(finalScoreText).to({y:game.world.centerY}, 1000, Phaser.Easing.Back.Out, true);
 	
 	timeMarkerGameOver = game.time.now + 5000;
+
+	game.time.events.add(Phaser.Timer.SECOND * 5, showIntroInfo, this);
 }
 
-function restartGame( isFirstRun ) {
-	isFirstRun = isFirstRun || false;
+function showIntroInfo() {
+	introInfoGroup.visible = true;
+	finalScoreText.visible = false;
+}
+
+function restartGame() {
+
+	introInfoGroup.visible = false;
+
 	finalScoreText.visible = false;
 	finalScoreText.y = -500;
 	finalScoreText.setText("");
 	totalHealthShooter = maxHealthShooter;
 	totalPrizeHits = 0;
 	gameLevelTimer = maxGameLevelTime;
-	gameOver = false;
-	restartLevel( isFirstRun );
+
+	restartLevel();
+
 	gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
+
+	timeMarkerMoveBlueSquares = game.time.now + 10000;
+	timeMarkerMovePrizes = game.time.now + 20000;
+	timeMarkerTweakTriangles = game.time.now + 15000;
+
+	gameOver = false;
 
 }
 
-function restartLevel( isFirstRun ) {
-	isFirstRun = isFirstRun || false;
+function restartLevel() {
 	saveShooterVelocityX = null;
 	saveShooterVelocityY = null;
 	shooterDead = false;
+	shooter1.visible = true;
 	shooter1.alpha = 1;
   shooter1.angle = 90;
   shooter1.x = game.world.centerX;
@@ -568,15 +606,8 @@ function restartLevel( isFirstRun ) {
   shooter1.body.velocity.setTo(0,0);
 	shooter1.body.velocity.x = -defShooterVelocity;
 
-	if ( !isFirstRun ) {
-		healthText.setText( totalHealthShooter );
-		scoreText.setText( totalPrizeHits );
-	} else {
-		game.time.events.add(1000, function(){
-			healthText.setText( totalHealthShooter );
-			scoreText.setText( totalPrizeHits );
-		}, this);
-	}
+	healthText.setText( totalHealthShooter );
+	scoreText.setText( totalPrizeHits );
 
 }
 

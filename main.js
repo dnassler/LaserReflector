@@ -243,11 +243,11 @@ game_state.main.prototype = {
 		leftLimitX = shooter1.width/2;
 
 		// --
-		var style = { font: "65px Arial", fill: "#ff0044", align: "center" };
+		var style = { font: "50px 'Press Start 2P'", fill: "#ff0044", align: "center" };
 
-    scoreText = game.add.text(game.world.width-100, 10, totalPrizeHits, style);
-    healthText = game.add.text(game.world.width-100, 110, totalHealthShooter, style);
-    timerText = game.add.text(game.world.width-100, 210, gameLevelTimer, style);
+    scoreText = game.add.text(game.world.width-100, 10, "", style);
+    healthText = game.add.text(game.world.width-100, 110, "", style);
+    timerText = game.add.text(game.world.width-100, 210, "", style);
 
     finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#ffffff", align: "center", stroke: "#258acc", strokeThickness: 8 });
     finalScoreText.anchor.setTo(0.5,0.5);
@@ -258,6 +258,12 @@ game_state.main.prototype = {
 		timeMarkerMoveBlueSquares = game.time.now + 10000;
 		timeMarkerMovePrizes = game.time.now + 20000;
 		timeMarkerTweakTriangles = game.time.now + 15000;
+
+		game.time.events.add(1000, function(){
+			healthText.setText( totalHealthShooter );
+			scoreText.setText( totalPrizeHits );
+		}, this);
+		
 	},
 
 	update: function() {
@@ -563,6 +569,7 @@ function restartLevel() {
   shooter1.body.acceleration.setTo(0,0);
   shooter1.body.velocity.setTo(0,0);
 	shooter1.body.velocity.x = -defShooterVelocity;
+
 	healthText.setText( totalHealthShooter );
 	scoreText.setText( totalPrizeHits );
 

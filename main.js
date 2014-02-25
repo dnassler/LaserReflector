@@ -253,17 +253,12 @@ game_state.main.prototype = {
     finalScoreText.anchor.setTo(0.5,0.5);
     finalScoreText.visible = false;
 
-    restartGame(); // start/restart level (i.e. sets the health point to full and the score to zero)
+    restartGame(true); // start/restart level (i.e. sets the health point to full and the score to zero)
 
 		timeMarkerMoveBlueSquares = game.time.now + 10000;
 		timeMarkerMovePrizes = game.time.now + 20000;
 		timeMarkerTweakTriangles = game.time.now + 15000;
 
-		game.time.events.add(1000, function(){
-			healthText.setText( totalHealthShooter );
-			scoreText.setText( totalPrizeHits );
-		}, this);
-		
 	},
 
 	update: function() {
@@ -415,6 +410,7 @@ function fixSnapLocationReflector( reflectorSprite ) {
 
 function fireButtonPressed() {
 	if ( gameOver || shooterDead ) {
+		if ( !gameOver ) return; // ignore the fire button right now
 		if ( game.time.now > timeMarkerGameOver ) {
 			// the user pressed the fire button after a game over occurred after
 			// a preset amount of time
@@ -544,7 +540,8 @@ function gameLevelTimeout() {
 	timeMarkerGameOver = game.time.now + 5000;
 }
 
-function restartGame() {
+function restartGame( isFirstRun ) {
+	isFirstRun = isFirstRun || false;
 	finalScoreText.visible = false;
 	finalScoreText.y = -500;
 	finalScoreText.setText("");
@@ -552,12 +549,13 @@ function restartGame() {
 	totalPrizeHits = 0;
 	gameLevelTimer = maxGameLevelTime;
 	gameOver = false;
-	restartLevel();
+	restartLevel( isFirstRun );
 	gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
 
 }
 
-function restartLevel() {
+function restartLevel( isFirstRun ) {
+	isFirstRun = isFirstRun || false;
 	saveShooterVelocityX = null;
 	saveShooterVelocityY = null;
 	shooterDead = false;
@@ -570,8 +568,15 @@ function restartLevel() {
   shooter1.body.velocity.setTo(0,0);
 	shooter1.body.velocity.x = -defShooterVelocity;
 
-	healthText.setText( totalHealthShooter );
-	scoreText.setText( totalPrizeHits );
+	if ( !isFirstRun ) {
+		healthText.setText( totalHealthShooter );
+		scoreText.setText( totalPrizeHits );
+	} else {
+		game.time.events.add(1000, function(){
+			healthText.setText( totalHealthShooter );
+			scoreText.setText( totalPrizeHits );
+		}, this);
+	}
 
 }
 

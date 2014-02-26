@@ -132,6 +132,9 @@ game_state.main.prototype = {
     	var shapeName = Phaser.Math.getRandom( shapeNameArr );
     	var s = game.add.sprite(x,y,shapeName);
     	s.anchor.setTo(0.5,0.5);
+    	if ( shapeName == "triangleReflector1" ) {
+    		s.angle = Math.floor(Math.random()*4)*90;
+    	}
     	var rscale = Math.random()*2 + 1;
     	s.scale.setTo(rscale,rscale);
     	s.body.velocity.x = (20 * rscale/2.0);

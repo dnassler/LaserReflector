@@ -253,7 +253,8 @@ game_state.main.prototype = {
     healthText = game.add.text(game.world.width-100, 110, "", style);
     timerText = game.add.text(game.world.width-100, 210, "", style);
 
-    finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#ffffff", align: "center", stroke: "#258acc", strokeThickness: 8 });
+    finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#258acc", align: "center" });
+		// finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#ffffff", align: "center", stroke: "#258acc", strokeThickness: 8 });
     // finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px 'Press Start 2P'", fill: "#ff0044", align: "center", stroke: "#FFFFFF", strokeThickness: 8 });
     finalScoreText.anchor.setTo(0.5,0.5);
     finalScoreText.visible = false;

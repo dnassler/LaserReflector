@@ -12,6 +12,7 @@ var introInfoGroup;
 var introText;
 
 var gameOverlayText; // this text will appear over game stage "Game Over", etc.
+var gameStartingText; // shows GET READY message that is displayed at game restart
 
 var timeMarkerUpdateBgTextGroup = 0;
 var timeMarkerMoveBlueSquares = 0;
@@ -268,6 +269,9 @@ game_state.main.prototype = {
 
     gameOverlayText = game.add.text( game.world.centerX, game.world.centerY, "", style );
     gameOverlayText.anchor.setTo(0.5,0.5);
+
+    gameStartingText = game.add.text( game.world.centerX, game.world.centerY, "", style );
+    gameStartingText.anchor.setTo(0.5,0.5);
 
     introInfoGroup = game.add.group();
     var blackBg = game.add.graphics(0,0);
@@ -672,15 +676,25 @@ function restartGame() {
 	totalPrizeHits = 0;
 	gameLevelTimer = maxGameLevelTime;
 
-	restartLevel();
+	gameStartingText.setText("GET READY!\n\n3");
+	gameStartingText.visible = true;
+	game.time.events.add(Phaser.Timer.SECOND, function () {
+			gameStartingText.setText("GET READY!\n\n2");
+	}, this);
+	game.time.events.add(Phaser.Timer.SECOND*2, function () {
+			gameStartingText.setText("GET READY!\n\n1");
+	}, this);
 
-	gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
-
-	timeMarkerMoveBlueSquares = game.time.now + 10000;
-	timeMarkerMovePrizes = game.time.now + 20000;
-	timeMarkerTweakTriangles = game.time.now + 15000;
-
-	gameOver = false;
+	// maybe put all of the below logic in timer to go after 3 seconds
+	game.time.events.add(Phaser.Timer.SECOND*3, function() {
+		gameStartingText.visible = false;
+		restartLevel();
+		gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
+		timeMarkerMoveBlueSquares = game.time.now + 10000;
+		timeMarkerMovePrizes = game.time.now + 20000;
+		timeMarkerTweakTriangles = game.time.now + 15000;
+		gameOver = false;		
+	}, this);
 
 }
 

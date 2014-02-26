@@ -253,7 +253,8 @@ game_state.main.prototype = {
     healthText = game.add.text(game.world.width-100, 110, "", style);
     timerText = game.add.text(game.world.width-100, 210, "", style);
 
-    finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#ffffff", align: "center", stroke: "#258acc", strokeThickness: 8 });
+    // finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#ffffff", align: "center", stroke: "#258acc", strokeThickness: 8 });
+    finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px 'Press Start 2P'", fill: "#ff0044", align: "center", stroke: "#FFFFFF", strokeThickness: 8 });
     finalScoreText.anchor.setTo(0.5,0.5);
     finalScoreText.visible = false;
 
@@ -326,9 +327,9 @@ game_state.main.prototype = {
     		+ "and are limited to "+maxHealthShooter+" lives.\n\n"
     		+ "Players may want to control the shooter\n"
     		+ "acceleration around the game edge by using\n"
-    		+ "the using the W/A/S/D keys. Also it is\n"
-    		+ "possible to drag and rotate the triangle\n"
-    		+ "pieces to shoot more strategically. The more\n"
+    		+ "the W/A/S/D keys. Also it is possible\n"
+    		+ "to drag and rotate the triangle pieces\n"
+    		+ "to shoot more strategically. The more\n"
     		+ "the laser bounces, the more points per\n"
     		+ "'green box' hit. And BONUS points are\n"
     		+ "awarded based on the number of lives\n"

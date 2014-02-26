@@ -9,6 +9,7 @@ var numBlocksVertical;
 var numBlocksHorizontal;
 
 var introInfoGroup;
+var introText;
 
 var timeMarkerUpdateBgTextGroup = 0;
 var timeMarkerMoveBlueSquares = 0;
@@ -257,20 +258,83 @@ game_state.main.prototype = {
     finalScoreText.visible = false;
 
     introInfoGroup = game.add.group();
-    //var  = game.add.graphics();
-    introText = game.add.text( 
-    	game.world.centerX, game.world.centerY, 
-    	"Welcome to LASER REFLECTOR!!!\n"
-    	+ "Press '\\' for fullscreen (recommended).\n"
-    	+ "Press SPACEBAR to fire laser.\n"
-    	+ "Try to hit the green boxes without\n"
-    	+ "hitting the blue reflector boxes.\n"
-    	+ "Watch out for the triangle reflectors!\n"
-    	+ "Note you only have "+maxGameLevelTime+" seconds of time\n"
-    	+ "and are limited to "+maxHealthShooter+" lives.", 
-    	style );
+    var blackBg = game.add.graphics(0,0);
+    introInfoGroup.add( blackBg );
+    blackBg.beginFill("0x000000");
+    blackBg.drawRect(0,0,game.width,game.height);
+    // now draw a red laser around the perimeter of the game world
+    //blackBg.setStrokeStyle(laserWidth);
+    //blackBg.strokeStyle('#f00');
+    
+    var introPrize1 = game.add.sprite(gridSize/2,game.world.height-gridSize/2*3, "greenBox");
+    introPrize1.anchor.setTo(0.5,0.5);
+    introPrize1.scale.setTo(2,2);
+    introInfoGroup.add( introPrize1 );
+    var introPrize2 = game.add.sprite(game.world.centerX, game.world.height-gridSize/2, "greenBox");
+    introPrize2.anchor.setTo(0.5,0.5);
+    introPrize2.scale.setTo(2,2);
+    introInfoGroup.add( introPrize2 );
+    var introPrize3 = game.add.sprite(game.world.width-gridSize/2, 5*gridSize/2, "greenBox");
+    introPrize3.anchor.setTo(0.5,0.5);
+    introPrize3.scale.setTo(2,2);
+    introInfoGroup.add( introPrize3 );
+
+    blackBg.lineStyle(10, 0xFF0000, 1);
+    blackBg.moveTo(50,50);
+    blackBg.lineTo(game.world.width-gridSize/2,gridSize/2);
+    blackBg.lineTo(game.world.width-gridSize/2,game.world.height-gridSize/2);
+    blackBg.lineTo(gridSize/2,game.world.height-gridSize/2);
+    blackBg.lineTo(gridSize/2,gridSize/2+gridSize*3);
+
+    // *** add graphics to the intro screen (i.e. show the pieces)
+    //blackBg.alpha = 0.1;
+    var introShooter = game.add.sprite(50,50, "shooter1");
+    introShooter.anchor.setTo(0.5,0.5);
+    introInfoGroup.add( introShooter );
+    var introTri1 = game.add.sprite(game.world.width-gridSize/2,gridSize/2, "triangleReflector1");
+    introTri1.anchor.setTo(0.5,0.5);
+    introTri1.angle=180;
+    introInfoGroup.add( introTri1 );
+    var introTri2 = game.add.sprite(game.world.width-gridSize/2,game.world.height-gridSize/2, "triangleReflector1");
+    introTri2.anchor.setTo(0.5,0.5);
+    introInfoGroup.add( introTri2 );
+    introTri2.angle=270;
+    var introTri3 = game.add.sprite(gridSize/2,game.world.height-gridSize/2, "triangleReflector1");
+    introTri3.anchor.setTo(0.5,0.5);
+    introInfoGroup.add( introTri3 );
+		var introBlocker = game.add.sprite(gridSize/2,3*gridSize+gridSize/2, "blocker1");
+    introBlocker.anchor.setTo(0.5,0.5);
+    introInfoGroup.add( introBlocker );
+    var introReflector = game.add.sprite(gridSize/2,2*gridSize+gridSize/2, "boxReflector1");
+    introReflector.anchor.setTo(0.5,0.5);
+    introInfoGroup.add( introReflector );
+    
+		var introStyle = { font: "24px 'Press Start 2P'", fill: "#ff0044", align: "center" };
+    introText = game.add.text( game.world.centerX, game.world.centerY, "",	introStyle );
     introText.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introText );
+
+    game.time.events.add(Phaser.Timer.SECOND*2, function () {
+    	introText.setText(
+    		"Welcome to LASER REFLECTOR!!!\n\n"
+    		+ "Press '\\' for fullscreen (recommended).\n"
+    		+ "Press SPACEBAR to fire laser.\n"
+    		+ "Try to hit the green boxes without\n"
+    		+ "hitting the blue reflector boxes.\n"
+    		+ "Watch out for the triangle reflectors!\n"
+    		+ "Note you only have "+maxGameLevelTime+" seconds of time\n"
+    		+ "and are limited to "+maxHealthShooter+" lives.\n\n"
+    		+ "Players may want to control the shooter\n"
+    		+ "acceleration around the game edge by using\n"
+    		+ "the using the W/A/S/D keys. Also it is\n"
+    		+ "possible to drag and rotate the triangle\n"
+    		+ "pieces to shoot more strategically. The more\n"
+    		+ "the laser bounces, the more points per\n"
+    		+ "'green box' hit. And BONUS points are\n"
+    		+ "awarded based on the number of lives\n"
+    		+ "remaining."
+    		);
+    }, this);
 
 		// game.time.events.add(1000, function(){
 		// 	healthText.setText( totalHealthShooter );
@@ -348,9 +412,6 @@ game_state.main.prototype = {
 		// game.debug.renderInputInfo(10,400);
 
 		game.debug.renderSpriteInfo(shooter1,10,600);
-
-
-		
 
 	}
 
@@ -561,7 +622,7 @@ function gameLevelTimeout() {
 	
 	timeMarkerGameOver = game.time.now + 5000;
 
-	game.time.events.add(Phaser.Timer.SECOND * 5, showIntroInfo, this);
+	game.time.events.add(Phaser.Timer.SECOND * 10, showIntroInfo, this);
 }
 
 function showIntroInfo() {
@@ -604,10 +665,12 @@ function restartLevel() {
   shooter1.body.angularVelocity = 0;
   shooter1.body.acceleration.setTo(0,0);
   shooter1.body.velocity.setTo(0,0);
-	shooter1.body.velocity.x = -defShooterVelocity;
+	shooter1.body.velocity.x = -defShooterVelocity; // make the direction random left/right
+	// also make the starting side random (top/bottom)
 
 	healthText.setText( totalHealthShooter );
 	scoreText.setText( totalPrizeHits );
+	timerText.setText( gameLevelTimer );
 
 }
 

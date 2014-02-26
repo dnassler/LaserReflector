@@ -444,6 +444,9 @@ function updateGameLevelTimer() {
 	timerText.setText(gameLevelTimer);
 	if ( gameLevelTimer <= 0 ) {
 		gameLevelTimeout();
+	} else if ( gameLevelTimer == 10 ) {
+		game.add.tween(timerText).to({alpha:0},100,Phaser.Easing.Linear.None,true)
+		.to({alpha:1},100,Phaser.Easing.Linear.None,true,0,100,true);
 	}
 }
 
@@ -574,7 +577,7 @@ function fireButtonPressed() {
 		var d = shooterDirection();
 		if ( d.isUp || d.isDown ) {
 			game.add.tween(shooter1)
-				.to( { x: '+10' }, 250, Phaser.Easing.Linear.None, true, 0, 0, true)
+				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
 				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
 				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
 				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
@@ -594,7 +597,7 @@ function fireButtonPressed() {
 				.onComplete.add( shooterDies, this );
 		} else {
 			game.add.tween(shooter1)
-				.to( { y: '+10' }, 250, Phaser.Easing.Linear.None, true, 0, 0, true)
+				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
 				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
 				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
 				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
@@ -722,6 +725,7 @@ function restartLevel() {
 	healthText.setText( totalHealthShooter );
 	scoreText.setText( totalPrizeHits );
 	timerText.setText( gameLevelTimer );
+	timerText.alpha = 1;
 
 }
 

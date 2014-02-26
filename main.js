@@ -3,6 +3,8 @@ var game = new Phaser.Game( 1200, 800, Phaser.AUTO, 'game_div');
 
 var game_state = {};
 
+var debug=0
+
 // define globals here
 var gridSize = 100;
 var numBlocksVertical;
@@ -25,6 +27,7 @@ var maxHealthShooter = 5;
 
 var gameLevelTimer;
 var gameOver = true;
+var shooterDead = false;
 
 var boxReflector1;
 var triangleReflector1;
@@ -57,8 +60,6 @@ var shooterAcceleration = 300;
 
 var laserWidth = 10;
 var prizeWidth = 34;
-
-var prizeArr;
 
 var rightLimitX;
 var topLimitY;
@@ -178,7 +179,7 @@ game_state.main.prototype = {
 			allGridObjectsArr.push( r );
 		}
 		for (var i=0; i<5; i++) {
-			reflectorGroup1.add( createGameElement("blocker1") );
+			var r = reflectorGroup1.add( createGameElement("blocker1") );
 			allGridObjectsArr.push( r );
 		}
 
@@ -455,10 +456,13 @@ function rotateTriangleReflector( r, randomRotate ) {
 	if ( randomRotate ) {
 		newAngle = Math.floor(Math.random() * 4) * 90;
 	} else {
-		newAngle = r.angle + 90;
+		newAngle = Phaser.Math.snapToFloor(r.angle,90) + 90;
 	}
 	//r.angle = newAngle;
-	game.add.tween(r).to({angle:newAngle}, 500, Phaser.Easing.Linear.None, true);
+	game.add.tween(r).to({angle:newAngle}, 500, Phaser.Easing.Linear.None, true)
+		.onComplete.add(function(){
+			r.angle = Phaser.Math.snapToFloor(r.angle, 90);
+		}, this);
 }
 
 function fullscreenKeyPressed() {
@@ -550,23 +554,32 @@ function fireButtonPressed() {
 		laserTimerEvent = game.time.events.loop(100, laserTimerEventCallback, this);
 		totalHealthShooter -= 1;
 	}
-	if ( prizeArr.length > 0 ) {
+	if ( r.prizeArr.length > 0 ) {
 		// game.add.tween(b)
 		// 	.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
 
-		prizeArr.forEach(function(p) {
+		r.prizeArr.forEach(function(p) {
 			// prizeHitTweenArr.push( 
 			// 	game.add.tween(p.scale)
 			// 		.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true)
 			// 		.to({x:1,y:1}, 100, Phaser.Easing.Linear.None, true, 0)
 			// 		.loop() );
+			// flash the prizes that were hit by the laser!
 			game.add.tween(p.scale)
-				.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true);
+				.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true)
+				.onComplete.add( function () {
+					var point = findEmptyGridLocation();
+					p.scale.setTo(1,1);
+					game.add.tween(p)
+						.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
+						.to({x:point.x,y:point.y}, 1, Phaser.Easing.Linear.None, true, 500)
+						.to({alpha:1}, 500, Phaser.Easing.Linear.None, true, 500);
+				}, this);
 		});
 
 		//prizeHitEvent = game.time.events.loop(200, prizeHitTimerEventCallback, this);
 
-		totalPrizeHits += prizeArr.length * (r.numLaserBounces + 1);
+		totalPrizeHits += r.prizeArr.length * (r.numLaserBounces + 1);
 	}
 
 	// update score/health displayed
@@ -620,6 +633,30 @@ function fireButtonPressed() {
 
 }
 
+function fireButtonReleased() {
+	console.log("fireButtonReleased!");
+	laserLayerSprite1.visible = false;
+	laserFiring = false;
+	//1----if ( laserFiring) laserLayerTexture1.render(laserLayerSprite1, {x:0,y:0}, false, true);
+	if ( laserTimerEvent ) {
+		console.log("removing timer event");
+		game.time.events.remove(laserTimerEvent);
+	}
+	// if ( prizeHitEvent ) {
+	// 	console.log("removing prize hit event");
+	// 	game.time.events.remove(prizeHitEvent);
+	// }
+
+	//resetObjectPositions( prizeArr );
+
+	if ( !gameOver && !shooterDead ) {
+		console.log("fireButtonReleased: saveShooterVelocityX="+saveShooterVelocityX);
+		if ( saveShooterVelocityX != null ) {
+			shooter1.body.velocity.setTo( saveShooterVelocityX, saveShooterVelocityY );
+		}
+	}
+}
+
 function shooterDies() {
   //game.add.tween(shooter1).to( { scale: 0 }, 2000, Phaser.Easing.Linear.None, true);
   shooterDead = true;
@@ -655,6 +692,7 @@ function gameLevelTimeout() {
 }
 
 function showIntroInfo() {
+	if ( debug=1 ) return;
 	if ( !gameOver ) return;
 	introInfoGroup.visible = true;
 	finalScoreText.visible = false;
@@ -670,6 +708,7 @@ function hideIntroInfo() {
 
 function restartGame() {
 
+	gameOver = false;
 	scrambleAllObjects();
 
 	introInfoGroup.visible = false;
@@ -678,9 +717,15 @@ function restartGame() {
 	finalScoreText.visible = false;
 	finalScoreText.y = -500;
 	finalScoreText.setText("");
+
 	totalHealthShooter = maxHealthShooter;
 	totalPrizeHits = 0;
 	gameLevelTimer = maxGameLevelTime;
+
+	healthText.setText( totalHealthShooter );
+	scoreText.setText( totalPrizeHits );
+	timerText.setText( gameLevelTimer );
+	timerText.alpha = 1;
 
 	gameStartingText.setText("GET READY!\n\n3");
 	gameStartingText.visible = true;
@@ -699,7 +744,7 @@ function restartGame() {
 		timeMarkerMoveBlueSquares = game.time.now + 10000;
 		timeMarkerMovePrizes = game.time.now + 20000;
 		timeMarkerTweakTriangles = game.time.now + 15000;
-		gameOver = false;		
+		
 	}, this);
 
 }
@@ -729,39 +774,6 @@ function restartLevel() {
 
 }
 
-function fireButtonReleased() {
-	console.log("fireButtonReleased!");
-	laserLayerSprite1.visible = false;
-	laserFiring = false;
-	//1----if ( laserFiring) laserLayerTexture1.render(laserLayerSprite1, {x:0,y:0}, false, true);
-	if ( laserTimerEvent ) {
-		console.log("removing timer event");
-		game.time.events.remove(laserTimerEvent);
-	}
-	if ( prizeHitEvent ) {
-		console.log("removing prize hit event");
-		game.time.events.remove(prizeHitEvent);
-	}
-	if ( prizeHitTweenArr.length > 0 ) {
-		console.log("removing prize hit tween");
-		prizeHitTweenArr.forEach(function(t) {
-			t.stop();
-		});
-		prizeHitTweenArr = [];
-	}
-
-	prizeArr = prizeArr || [];
-	setPrizeScale( prizeArr, 1 );
-	resetObjectPositions( prizeArr );
-
-	if ( !gameOver && !shooterDead ) {
-		console.log("fireButtonReleased: saveShooterVelocityX="+saveShooterVelocityX);
-		if ( saveShooterVelocityX != null ) {
-			shooter1.body.velocity.setTo( saveShooterVelocityX, saveShooterVelocityY );
-		}
-	}
-}
-
 function laserTimerEventCallback() {
 	if ( laserLayerSprite1.alpha == 1 ) {
 		laserLayerSprite1.alpha = 0.1;
@@ -770,22 +782,22 @@ function laserTimerEventCallback() {
 	}
 }
 
-function prizeHitTimerEventCallback() {
-	if (prizeArr.length > 0) {
-		var p = prizeArr[0];
-		if (p.scale.x == 2) {
-			setPrizeScale(prizeArr, 1);
-		} else {
-			setPrizeScale(prizeArr, 2);	
-		}
-	}
+// function prizeHitTimerEventCallback() {
+// 	if (prizeArr.length > 0) {
+// 		var p = prizeArr[0];
+// 		if (p.scale.x == 2) {
+// 			setPrizeScale(prizeArr, 1);
+// 		} else {
+// 			setPrizeScale(prizeArr, 2);	
+// 		}
+// 	}
 
-}
-function setPrizeScale( aPrizeArr, scaleAmount ) {
-	aPrizeArr.forEach(function(p) {
-		p.scale.setTo(scaleAmount,scaleAmount);
-	});
-}
+// }
+// function setPrizeScale( aPrizeArr, scaleAmount ) {
+// 	aPrizeArr.forEach(function(p) {
+// 		p.scale.setTo(scaleAmount,scaleAmount);
+// 	});
+// }
 
 function drawLaserFrom( x0, y0, angle ) {
 	
@@ -821,7 +833,7 @@ function drawLaserFrom( x0, y0, angle ) {
 	// laserLayerBM1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
 	// isReflectingBack = calcuatedLineSegmentInfo.isReflectingBack;
 	var laserDirection = shooterDirection();
-	prizeArr = [];
+	var prizeArr = [];
 	var numLaserBounces = 0;
 	while ( !calcuatedLineSegmentInfo || !calcuatedLineSegmentInfo.isLastSegment ) {
 		
@@ -860,18 +872,42 @@ function drawLaserFrom( x0, y0, angle ) {
 
 	console.log("drawLaserFrom: isReflectingBack="+isReflectingBack
 		+", prizeArr.length="+prizeArr.length);
-	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, prizeHitCount:prizeArr.length};
+	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, prizeArr:prizeArr};
 }
 
 function clickListener() {
-	console.log("input.x="+game.input.x+", input.y="+game.input.y);
+	console.log("\n\nclickListener: IN***");
+	// console.log("clickListener: input.x="+game.input.x+", input.y="+game.input.y);
+	var sp = snapToShapeGrid( {x:game.input.x,y:game.input.y} );
+	// console.log("clickListener: snapped to x="+sp.x+", y="+sp.y);
 	var r = hasShapeAt({x:game.input.x, y:game.input.y});
-	if ( r && isShapeTriangle(r) ) {
-		rotateTriangleReflector(r, false);
-		//console.log("hasShapeAt xy ********");
-	} else {
-		//console.log("hasShapeAt returned nothing.");
+	if ( r ) {
+		// console.log("clickListener: hasShapeAt returned a shape: shapeName="+r.name+", r.x="+r.x+", r.y="+r.y);
+		// debugging...
+		var adjacentSpots = getFreeAdjacentLocations(r.x, r.y);
+		// console.log("clickListener: get free adjacent locations relative to x="+r.x+", y="+r.y+"... found "+adjacentSpots.length);
+		// adjacentSpots.forEach( function ( p ) { 
+			// console.log( "clickListener: free spot at point.x="+p.x+", point.y="+p.y ); 
+		// } );
+	// } else {
+	// 	console.log("clickListener: hasShapeAt returned NOTHING. Checking adjacent spots...");
+	// 	var adjacentSpots = getFreeAdjacentLocations(sp.x, sp.y);
+	// 	console.log("clickListener: get free adjacent locations relative to sp.x="+sp.x+", sp.y="+sp.y+"... found "+adjacentSpots.length);
+	// 	adjacentSpots.forEach( function ( p ) { 
+	// 		console.log( "clickListener: free spot at point.x="+p.x+", point.y="+p.y ); 
+	// 	} );
+
 	}
+	if ( r && isShapeTriangle(r) ) {
+		// make sure that the triangle isn't in the process of rotating
+		console.log("clickListener: clicked on triangle");
+		if ( r.angle == Phaser.Math.snapToFloor(r.angle, 90) ) {
+			rotateTriangleReflector(r, false);
+		} else {
+			console.log("clickListener: the triangle is rotating!!!!!!! Ignoring the click!")
+		}
+	}
+	console.log("clickListener: OUT\n\n\n");
 }
 
 // given a direction (isUp, isDown, isRight, isLeft) and a co-ordinate
@@ -1410,23 +1446,27 @@ function hasShapeAtXY( x, y ) {
 	return hasShapeAt( {x:x,y:y} );
 }
 function hasShapeAt(xy) {
-	xy0 = snapToShapeGrid(xy);
+	// console.log("hasShapeAt: IN");
+	var xy0 = snapToShapeGrid(xy);
 	var x0 = xy0.x;
 	var y0 = xy0.y;
-	console.log("hasShapeAt: x0="+x0+", y0="+y0)
-	for (var i=0; i < reflectorGroup1.length; i++) {
-		var shape = reflectorGroup1.getAt(i);
+	// console.log("hasShapeAt: x0="+x0+", y0="+y0);
+	for (var i=0; i < allGridObjectsArr.length; i++) {
+		var shape = allGridObjectsArr[i];
 		if ( shape.alive ) {
 			if ( x0 === shape.x && y0 === shape.y ) {
-				console.log("found shape");
+				// console.log("hasShapeAt: found shape.x="+shape.x+", shape.y="+shape.y+", name="+shape.name);
 				return shape;
 			}
 		}
 	}
+	// console.log("hasShapeAt: OUT - found none... returning false");
+	return false;
 }
 
 // this function mischeiviously changes the locations of some or all of the deadly blue squares
 function updateObjectPositions( objectsToMoveArr ) {
+	if ( debug=1 ) return;
 	// boxReflectorArr.forEach(function () {		
 	// });
 	console.log("updateBlueSquarePositions: IN");
@@ -1442,7 +1482,7 @@ function updateObjectPositions( objectsToMoveArr ) {
 	}
 
 	var newLocationPoint = Phaser.Math.getRandom( adjacentSpots );
-	console.log("updateBlueSquarePositions: moving blue box from x="+b.x+", y="+b.y+" to x="+newLocationPoint.x+", y="+newLocationPoint.y);
+	//console.log("updateBlueSquarePositions: moving blue box from x="+b.x+", y="+b.y+" to x="+newLocationPoint.x+", y="+newLocationPoint.y);
 
 	//game.physics.moveToXY( b, newLocationPoint.x, newLocationPoint.y, 100 );
 	game.add.tween(b).to({x:newLocationPoint.x, y:newLocationPoint.y}, 500, Phaser.Easing.Back.Out, true);
@@ -1519,14 +1559,16 @@ function scrambleAllObjects() {
 // 	game.add.tween(reflectorGroup1).to({y:0}, 500, Phaser.Easing.Linear.None, true, 1500);
 // }
 
+// the following function is not used
 function resetObjectPositions( objectsToMoveArr ) {
 	objectsToMoveArr.forEach( function ( b ) {
 		var point = findEmptyGridLocation();
 		console.log("resetObjectPositions: b.x="+b.x+", b.y="+b.y+", point.x="+point.x+", point.y="+point.y);
+		b.scale.setTo(1,1);
 		game.add.tween(b)
 			.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
 			.to({x:point.x,y:point.y}, 1, Phaser.Easing.Linear.None, true)
-			.to({alpha:1}, 500, Phaser.Easing.Linear.None, true);
+			.to({alpha:1}, 500, Phaser.Easing.Linear.None, true, 500);
 
 		// game.add.tween(b)
 		// 	.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)

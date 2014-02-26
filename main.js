@@ -692,7 +692,7 @@ function gameLevelTimeout() {
 }
 
 function showIntroInfo() {
-	if ( debug=1 ) return;
+	if ( debug==1 ) return;
 	if ( !gameOver ) return;
 	introInfoGroup.visible = true;
 	finalScoreText.visible = false;
@@ -1466,7 +1466,7 @@ function hasShapeAt(xy) {
 
 // this function mischeiviously changes the locations of some or all of the deadly blue squares
 function updateObjectPositions( objectsToMoveArr ) {
-	if ( debug=1 ) return;
+	if ( debug==1 ) return;
 	// boxReflectorArr.forEach(function () {		
 	// });
 	console.log("updateBlueSquarePositions: IN");

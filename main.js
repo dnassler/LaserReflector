@@ -11,13 +11,15 @@ var numBlocksHorizontal;
 var introInfoGroup;
 var introText;
 
+var gameOverlayText; // this text will appear over game stage "Game Over", etc.
+
 var timeMarkerUpdateBgTextGroup = 0;
 var timeMarkerMoveBlueSquares = 0;
 var timeMarkerMovePrizes = 0;
 var timeMarkerTweakTriangles = 0;
 var timeMarkerGameOver = 0;
 
-var maxGameLevelTime = 100;
+var maxGameLevelTime = 99;
 var maxHealthShooter = 5;
 
 var gameLevelTimer;
@@ -50,7 +52,7 @@ var prizeHitEvent;
 
 //var maxShooterVelocity = 300;
 var defShooterVelocity = 200;
-var shooterAcceleration = 100;
+var shooterAcceleration = 300;
 
 var laserWidth = 10;
 var prizeWidth = 34;
@@ -216,6 +218,11 @@ game_state.main.prototype = {
 
 		game.input.keyboard.addKey(Phaser.Keyboard.BACKWARD_SLASH).onDown.add( fullscreenKeyPressed );
 		game.stage.fullScreenScaleMode = Phaser.StageScaleMode.SHOW_ALL;
+
+		// for debugging only...
+		game.input.keyboard.addKey(Phaser.Keyboard.ZERO).onDown.add( 
+			function () { scrambleAllObjects(); } );
+		
 		//game.stage.scale=0.5;
 		//game.stage.backgroundColor = "#e3ed49";
 
@@ -258,6 +265,9 @@ game_state.main.prototype = {
     // finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px 'Press Start 2P'", fill: "#ff0044", align: "center", stroke: "#FFFFFF", strokeThickness: 8 });
     finalScoreText.anchor.setTo(0.5,0.5);
     finalScoreText.visible = false;
+
+    gameOverlayText = game.add.text( game.world.centerX, game.world.centerY, "", style );
+    gameOverlayText.anchor.setTo(0.5,0.5);
 
     introInfoGroup = game.add.group();
     var blackBg = game.add.graphics(0,0);
@@ -336,6 +346,8 @@ game_state.main.prototype = {
     		+ "awarded based on the number of lives\n"
     		+ "remaining."
     		);
+    	gameOverlayText.setText("GAME OVER\n\npress spacebar\nto start");
+    	showIntroInfo();
     }, this);
 
 		// game.time.events.add(1000, function(){
@@ -614,6 +626,7 @@ function shooterDies() {
 function gameLevelTimeout() {
 	gameOver = true;
 	game.time.events.remove(gameLevelTimerEvent);
+	shooter1.visible = false;
 
 	console.log("************** GAME OVER *****************");
 	// calculate final score based on the number of hits combined with the shooter health
@@ -622,19 +635,35 @@ function gameLevelTimeout() {
 	finalScoreText.setText( totalScore );
 	game.add.tween(finalScoreText).to({y:game.world.centerY}, 1000, Phaser.Easing.Back.Out, true);
 	
+	game.time.events.add(Phaser.Timer.SECOND*2, function () {
+		gameOverlayText.visible = true;
+	}, this);
+
 	timeMarkerGameOver = game.time.now + 5000;
 
-	game.time.events.add(Phaser.Timer.SECOND * 10, showIntroInfo, this);
+	game.time.events.add(Phaser.Timer.SECOND * 20, showIntroInfo, this);
 }
 
 function showIntroInfo() {
+	if ( !gameOver ) return;
 	introInfoGroup.visible = true;
 	finalScoreText.visible = false;
+	game.time.events.add(Phaser.Timer.SECOND * 10, hideIntroInfo, this);
+}
+
+function hideIntroInfo() {
+	if ( !gameOver ) return;
+	introInfoGroup.visible = false;
+	gameOverlayText.visible = true;
+	game.time.events.add(Phaser.Timer.SECOND * 10, showIntroInfo, this);
 }
 
 function restartGame() {
 
+	scrambleAllObjects();
+
 	introInfoGroup.visible = false;
+	gameOverlayText.visible = false;
 
 	finalScoreText.visible = false;
 	finalScoreText.y = -500;
@@ -700,6 +729,7 @@ function fireButtonReleased() {
 		prizeHitTweenArr = [];
 	}
 
+	prizeArr = prizeArr || [];
 	setPrizeScale( prizeArr, 1 );
 	resetObjectPositions( prizeArr );
 
@@ -731,7 +761,7 @@ function prizeHitTimerEventCallback() {
 
 }
 function setPrizeScale( aPrizeArr, scaleAmount ) {
-	prizeArr.forEach(function(p) {
+	aPrizeArr.forEach(function(p) {
 		p.scale.setTo(scaleAmount,scaleAmount);
 	});
 }
@@ -1425,6 +1455,48 @@ function findEmptyGridLocation() {
 	}
 	return {x:rx,y:ry};
 }
+
+function scrambleAllObjects() {
+		allGridObjectsArr.forEach(function (b) {
+			b.alive = false;
+		});
+		// create new arrangements
+		allGridObjectsArr.forEach(function (b) {
+			var point = findEmptyGridLocation();
+			b.x = point.x;
+			b.y = point.y;
+			b.alive = true;
+		});
+}
+
+// function scrambleAllObjects() {
+// 	//allGridObjectsArr, 
+// 	//prizeGroup (prizeGroupArr), reflectorGroup1
+
+// 	// first "push" away all of the current objects
+// 	game.add.tween(prizeGroup).to({y:game.world.height+10}, 500, Phaser.Easing.Linear.None, true);
+// 	game.add.tween(reflectorGroup1).to({y:game.world.height+10}, 500, Phaser.Easing.Linear.None, true, 500);
+
+// 	game.time.events.add(Phaser.Timer.SECOND, function() {
+// 		console.log("**************1111 prizeGroup.y="+prizeGroup.y);
+// 		allGridObjectsArr.forEach(function (b) {
+// 			//b.visible = false;
+// 			b.alive = false;
+// 		});
+// 		// create new arrangements
+// 		allGridObjectsArr.forEach(function (b) {
+// 			var point = findEmptyGridLocation();
+// 			b.x = point.x;
+// 			b.y = point.y;
+// 			b.alive = true;
+// 		});
+// 		console.log("**************2222 prizeGroup.y="+prizeGroup.y);
+// 	});
+
+// 	// now bring in the new arrangement
+// 	game.add.tween(prizeGroup).to({y:0}, 500, Phaser.Easing.Linear.None, true, 1000);
+// 	game.add.tween(reflectorGroup1).to({y:0}, 500, Phaser.Easing.Linear.None, true, 1500);
+// }
 
 function resetObjectPositions( objectsToMoveArr ) {
 	objectsToMoveArr.forEach( function ( b ) {

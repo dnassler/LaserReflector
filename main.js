@@ -115,11 +115,16 @@ game_state.main.prototype = {
 
 		//  Firefox doesn't support mp3 files, so use ogg
 		game.load.audio('bgGrumble', 'assets/audio/SC_140301_123920.mp3');
+		game.load.audio('sliding','assets/audio/sliding1.mp3');
+		game.load.audio('slidingPrize','assets/audio/sliding2.mp3');
+		game.load.audio('slidingTriangle','assets/audio/sliding3.mp3');
+
 		game.load.audio('laserFired','assets/audio/shield-hit.mp3');
 		game.load.audio('shooterDies','assets/audio/dramatic-fall-and-crash.mp3');
 		game.load.audio('prizeHit','assets/audio/button-select.mp3');
 		game.load.audio('gameStart','assets/audio/start-game.mp3');
 		game.load.audio('gameOver','assets/audio/game-over.mp3');
+
 	},
 
 	create: function() {
@@ -133,6 +138,10 @@ game_state.main.prototype = {
 
 		audioBackground = game.add.audio('bgGrumble',1,true);
 		audioBackground.play('',0,1,true);
+
+		audioSliding = game.add.audio('sliding',0.25,true);
+		audioSlidingPrize = game.add.audio('slidingPrize',0.1,true);
+		audioSlidingTriangle = game.add.audio('slidingTriangle',0.25,true);
 
 		audioLaserFired = game.add.audio('laserFired',0.75,true);
 		audioShooterDies = game.add.audio('shooterDies',0.3,true);
@@ -1537,7 +1546,12 @@ function updateObjectPositions( objectsToMoveArr ) {
 	//game.physics.moveToXY( b, newLocationPoint.x, newLocationPoint.y, 100 );
 	game.add.tween(b).to({x:newLocationPoint.x, y:newLocationPoint.y}, 500, Phaser.Easing.Back.Out, true);
 	if ( isShapeTriangle(b) ) {
+		audioSlidingTriangle.play();
 		rotateTriangleReflector( b, true );
+	} else if ( b.name == 'greenBox' ) {
+		audioSlidingPrize.play();
+	} else {
+		audioSliding.play();
 	}
 
 	//game.add.tween(p).to({ x: 700 }, 1000, Phaser.Easing.Linear.None, true) .to({ y: 300 }, 1000, Phaser.Easing.Linear.None) .to({ x: 0 }, 1000, Phaser.Easing.Linear.None) .to({ y: 0 }, 1000, Phaser.Easing.Linear.None) .loop();

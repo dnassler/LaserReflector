@@ -95,6 +95,10 @@ game_state.main = function() {};
 game_state.main.prototype = {
 
 	preload: function() {
+		
+		// ==
+		// sprite images...
+
 		game.load.image('boxReflector1', "assets/squareBlue1.png");
 		game.load.image('triangleReflector1', "assets/triangleWhite1_0.png");
 		game.load.image('blocker1', "assets/square1.png");
@@ -105,6 +109,17 @@ game_state.main.prototype = {
 		game.load.image('laser1', "assets/laserTexture1.png");
 
 		game.load.image('greenBox', "assets/greenBox.png");
+
+		// ==
+		// sounds...
+
+		//  Firefox doesn't support mp3 files, so use ogg
+		game.load.audio('bgGrumble', 'assets/audio/SC_140301_123920.mp3');
+		game.load.audio('laserFired','assets/audio/shield-hit.mp3');
+		game.load.audio('shooterDies','assets/audio/dramatic-fall-and-crash.mp3');
+		game.load.audio('prizeHit','assets/audio/button-select.mp3');
+		game.load.audio('gameStart','assets/audio/start-game.mp3');
+		game.load.audio('gameOver','assets/audio/game-over.mp3');
 	},
 
 	create: function() {
@@ -113,6 +128,20 @@ game_state.main.prototype = {
 
 		numBlocksVertical = Math.floor(game.world.height/gridSize) - 2;
 		numBlocksHorizontal = Math.floor(game.world.width/gridSize) -3;
+
+		// sound
+
+		audioBackground = game.add.audio('bgGrumble',1,true);
+		audioBackground.play('',0,1,true);
+
+		audioLaserFired = game.add.audio('laserFired',0.75,true);
+		audioShooterDies = game.add.audio('shooterDies',0.3,true);
+		audioPrizeHit = game.add.audio('prizeHit',0.75,true);
+
+		audioGameStart = game.add.audio('gameStart',0.75,true);
+		audioGameOver = game.add.audio('gameOver',0.75,true);
+
+		// ==
 
 		cursors = game.input.keyboard.createCursorKeys();
 
@@ -443,7 +472,12 @@ function updateGameLevelTimer() {
 	if ( gameOver ) return;
 	gameLevelTimer -= 1;
 	timerText.setText(gameLevelTimer);
+
 	if ( gameLevelTimer <= 0 ) {
+		
+		// play sound (game over)
+		audioGameOver.play();
+
 		gameLevelTimeout();
 	} else if ( gameLevelTimer == 10 ) {
 		game.add.tween(timerText).to({alpha:0},100,Phaser.Easing.Linear.None,true)
@@ -531,6 +565,10 @@ function fireButtonPressed() {
 	}
 
 	laserFiring = true;
+
+	// play sound!
+	audioLaserFired.play();
+
 	//laserLayerTexture1sprite.visible = true;
 	saveShooterVelocityX = shooter1.body.velocity.x;
 	saveShooterVelocityY = shooter1.body.velocity.y;
@@ -555,6 +593,10 @@ function fireButtonPressed() {
 		totalHealthShooter -= 1;
 	}
 	if ( r.prizeArr.length > 0 ) {
+
+		// play sound!
+		audioPrizeHit.play();
+
 		// game.add.tween(b)
 		// 	.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
 
@@ -664,8 +706,12 @@ function shooterDies() {
 
 	game.add.tween(shooter1).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true, 500);
 	if ( totalHealthShooter > 0 ) {
+		// play sound of shooter dying (but not yet dead)
+		audioShooterDies.play();
 		game.time.events.add(3000, restartLevel, this);
 	} else {
+		// play sound of shooter dying (game over)
+		audioShooterDies.play();
 		gameLevelTimeout();
 	}
 }
@@ -729,6 +775,7 @@ function restartGame() {
 
 	gameStartingText.setText("GET READY!\n\n3");
 	gameStartingText.visible = true;
+
 	game.time.events.add(Phaser.Timer.SECOND, function () {
 			gameStartingText.setText("GET READY!\n\n2");
 	}, this);
@@ -738,6 +785,9 @@ function restartGame() {
 
 	// maybe put all of the below logic in timer to go after 3 seconds
 	game.time.events.add(Phaser.Timer.SECOND*3, function() {
+		// play sound
+		audioGameStart.play();
+
 		gameStartingText.visible = false;
 		restartLevel();
 		gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);

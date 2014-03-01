@@ -390,7 +390,8 @@ game_state.main.prototype = {
     		+ "the laser bounces, the more points per\n"
     		+ "'green box' hit. And BONUS points are\n"
     		+ "awarded based on the number of lives\n"
-    		+ "remaining."
+    		+ "remaining.\n\n"
+    		+ "laser.reflector@gmail.com\n"
     		);
     	gameOverlayText.setText("GAME OVER\n\npress spacebar\nto start");
     	showIntroInfo();

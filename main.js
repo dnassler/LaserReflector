@@ -446,7 +446,7 @@ game_state.main.prototype = {
 
 		if ( game.time.now > timeMarkerMovePrizes ) {
 			updateObjectPositions( prizeGroupArr );
-			timeMarkerMovePrizes = game.time.now + Math.random()*15000 + 5000;
+			timeMarkerMovePrizes = game.time.now + Math.random()*5000 + 5000;
 		}
 
 		if ( game.time.now > timeMarkerTweakTriangles ) {
@@ -800,9 +800,9 @@ function restartGame() {
 		gameStartingText.visible = false;
 		restartLevel();
 		gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
-		timeMarkerMoveBlueSquares = game.time.now + 10000;
-		timeMarkerMovePrizes = game.time.now + 20000;
-		timeMarkerTweakTriangles = game.time.now + 15000;
+		timeMarkerMoveBlueSquares = game.time.now + 1000;
+		timeMarkerMovePrizes = game.time.now + 2000;
+		timeMarkerTweakTriangles = game.time.now + 2000;
 		
 	}, this);
 

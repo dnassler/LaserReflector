@@ -374,7 +374,7 @@ game_state.main.prototype = {
 
     game.time.events.add(Phaser.Timer.SECOND*2, function () {
     	introText.setText(
-    		"Welcome to LASER REFLECTOR!!!\n\n"
+    		"Welcome to LAZOR REFLEKTOR!!!\n\n"
     		+ "Press '\\' for fullscreen (recommended).\n"
     		+ "Press SPACEBAR to fire laser.\n"
     		+ "Try to hit the green boxes without\n"
@@ -391,7 +391,7 @@ game_state.main.prototype = {
     		+ "'green box' hit. And BONUS points are\n"
     		+ "awarded based on the number of lives\n"
     		+ "remaining.\n\n"
-    		+ "laser.reflector@gmail.com\n"
+    		+ "lazor.reflektor@gmail.com\n"
     		);
     	gameOverlayText.setText("GAME OVER\n\npress spacebar\nto start");
     	showIntroInfo();

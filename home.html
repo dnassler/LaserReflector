@@ -2,8 +2,16 @@
 <html>
     
 <head>
+  <meta charset="utf-8" />
   <link href='http://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
-  <meta name="viewport" content="width=device-width, height=device-height" />
+
+  <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+  
+  <!-- <script type="text/javascript">
+    var screenScale = Math.floor(10 / window.devicePixelRatio) / 10;
+    document.write('<meta name="viewport" content="initial-scale=' + screenScale + ', user-scalable=no" />');
+  </script> -->
+
   <meta name="mobile-web-app-capable" content="yes">
   <title>Laser Reflector!!!!!</title>
 
@@ -13,7 +21,6 @@
       margin:0px 0px; padding:0px;
     }
     #game_div {
-      width: 1200px;
       margin: auto;
       margin-top: 0px;
     }
@@ -25,9 +32,7 @@
 </head>
 
 <body>
-    <div id="mydiv"></div>
     <div id="game_div"> </div>
-
 </body>
 
 </html>

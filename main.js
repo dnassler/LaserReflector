@@ -1,5 +1,12 @@
+var pixelRatio = window.devicePixelRatio;
+var w = window.innerWidth ;//* pixelRatio,
+    h = window.innerHeight ;//* pixelRatio;
 
-var game = new Phaser.Game( 1200, 800, Phaser.AUTO, 'game_div');
+const SAFE_ZONE_WIDTH=2048;
+const SAFE_ZONE_HEIGHT=1536; //1344;
+
+//var game = new Phaser.Game( (h > w) ? h : w, (h > w) ? w : h, Phaser.CANVAS, 'game_div');
+var game = new Phaser.Game( SAFE_ZONE_WIDTH, SAFE_ZONE_HEIGHT, Phaser.AUTO, 'game_div');
 
 var game_state = {};
 
@@ -91,6 +98,40 @@ var shapeNameArr;
 
 var prizeHitTweenArr;
 
+window.addEventListener('resize', function(event){
+	resizeGame();
+});
+
+var resizeGame = function () {
+  // var height = window.innerHeight;
+  // var width = window.innerWidth;
+//   console.log("resizeGame: width="+window.innerWidth);
+
+// game.width = window.innerWidth;
+// game.height = window.innerHeight;
+//   game.world.width = window.innerWidth;
+//   game.world.height = window.innerHeight;
+
+
+  // game.stage.bounds.width = width;
+  // game.stage.bounds.height = height;
+ 
+  // if (game.renderType === 1) {
+  //   game.renderer.resize(width, height);
+  //   Phaser.Canvas.setSmoothingEnabled(game.context, false);
+  // }
+  // game.camera.setSize(width, height);
+
+  game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL; //resize your window to see the stage resize too
+	game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;
+	game.stage.scale.setShowAll();
+	game.stage.scale.refresh();
+// 	  	numBlocksVertical = Math.floor(game.world.height/gridSize) - 2;
+// 		numBlocksHorizontal = Math.floor(game.world.width/gridSize) -3;
+// scrambleAllObjects();
+
+}
+
 game_state.main = function() {};
 game_state.main.prototype = {
 
@@ -130,6 +171,22 @@ game_state.main.prototype = {
 	create: function() {
 
 		gameOver = true;
+
+		// ==
+
+		// var lGameScale=Math.round(10000 * Math.min(game.width/SAFE_ZONE_WIDTH,game.height / SAFE_ZONE_HEIGHT)) / 10000;
+		// var world= game.add.group ();
+		// world.scale.setTo (lGameScale,lGameScale);
+		// world.x=(game.width-SAFE_ZONE_WIDTH*lGameScale)/2;
+		// world.y=(game.height-SAFE_ZONE_HEIGHT*lGameScale)/2;
+
+		// ==
+
+		game.stage.fullScreenScaleMode = Phaser.StageScaleMode.SHOW_ALL;
+		//game.stage.scale.startFullScreen();
+		game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;
+		game.stage.scale.setShowAll();
+		game.stage.scale.refresh();
 
 		numBlocksVertical = Math.floor(game.world.height/gridSize) - 2;
 		numBlocksHorizontal = Math.floor(game.world.width/gridSize) -3;
@@ -260,7 +317,6 @@ game_state.main.prototype = {
 		moveDownKey = game.input.keyboard.addKey(Phaser.Keyboard.S);
 
 		game.input.keyboard.addKey(Phaser.Keyboard.BACKWARD_SLASH).onDown.add( fullscreenKeyPressed );
-		game.stage.fullScreenScaleMode = Phaser.StageScaleMode.SHOW_ALL;
 
 		// for debugging only...
 		game.input.keyboard.addKey(Phaser.Keyboard.ZERO).onDown.add( 
@@ -382,15 +438,15 @@ game_state.main.prototype = {
     		+ "Watch out for the triangle reflectors!\n"
     		+ "Note you only have "+maxGameLevelTime+" seconds of time\n"
     		+ "and are limited to "+maxHealthShooter+" lives.\n\n"
-    		+ "Players may want to control the shooter\n"
-    		+ "acceleration around the game edge by using\n"
-    		+ "the W/A/S/D keys. Also it is possible\n"
-    		+ "to drag and rotate the triangle pieces\n"
-    		+ "to shoot more strategically. The more\n"
-    		+ "the laser bounces, the more points per\n"
-    		+ "'green box' hit. And BONUS points are\n"
-    		+ "awarded based on the number of lives\n"
-    		+ "remaining.\n\n"
+    		// + "Players may want to control the shooter\n"
+    		// + "acceleration around the game edge by using\n"
+    		// + "the W/A/S/D keys. Also it is possible\n"
+    		// + "to drag and rotate the triangle pieces\n"
+    		// + "to shoot more strategically. The more\n"
+    		// + "the laser bounces, the more points per\n"
+    		// + "'green box' hit. And BONUS points are\n"
+    		// + "awarded based on the number of lives\n"
+    		// + "remaining.\n\n"
     		+ "lazor.reflektor@gmail.com\n"
     		);
     	gameOverlayText.setText("GAME OVER\n\npress spacebar\nto start");
@@ -472,7 +528,10 @@ game_state.main.prototype = {
 
 		// game.debug.renderInputInfo(10,400);
 
-		game.debug.renderSpriteInfo(shooter1,10,600);
+		//game.debug.renderSpriteInfo(shooter1,10,600);
+    game.debug.renderText("w="+w+", h="+h+", window.devicePixelRatio="+window.devicePixelRatio,10,10);
+    game.debug.renderText("game.width="+game.width+", game.height="+game.height,10,50);
+    game.debug.renderText("screen.width="+screen.width+", screen.height="+screen.height,10,100);
 
 	}
 

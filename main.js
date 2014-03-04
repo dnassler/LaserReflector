@@ -10,11 +10,18 @@ var game = new Phaser.Game( SAFE_ZONE_WIDTH, SAFE_ZONE_HEIGHT, Phaser.AUTO, 'gam
 
 var game_state = {};
 
-var debug=0
+var debug=1
+
 
 // define globals here
+
 var gridSize = 100;
 var halfGridSize = 50;
+
+var shapeWidth = 100;
+var laserWidth = 10;
+var prizeWidth = 34;
+
 var numBlocksVertical;
 var numBlocksHorizontal;
 
@@ -65,9 +72,6 @@ var prizeHitEvent;
 //var maxShooterVelocity = 300;
 var defShooterVelocity = 200;
 var shooterAcceleration = 300;
-
-var laserWidth = 10;
-var prizeWidth = 34;
 
 var rightLimitX;
 var topLimitY;
@@ -195,8 +199,9 @@ game_state.main.prototype = {
 		// sound
 
 		audioBackground = game.add.audio('bgGrumble',1,true);
-		audioBackground.play('',0,1,true);
-
+		if ( debug != 1 ) {
+		  audioBackground.play('',0,1,true);
+		}
 		audioSliding = game.add.audio('sliding',0.25,true);
 		audioSlidingPrize = game.add.audio('slidingPrize',0.1,true);
 		audioSlidingTriangle = game.add.audio('slidingTriangle',0.25,true);
@@ -540,6 +545,8 @@ game_state.main.prototype = {
 
 function updateGameLevelTimer() {
 	if ( gameOver ) return;
+	if ( debug == 1 ) return;
+
 	gameLevelTimer -= 1;
 	timerText.setText(gameLevelTimer);
 
@@ -641,7 +648,7 @@ function fireButtonPressed() {
 	//laserLayerTexture1sprite.visible = true;
 	saveShooterVelocityX = shooter1.body.velocity.x;
 	saveShooterVelocityY = shooter1.body.velocity.y;
-	console.log("fireButtonPressed: setting saveShooterVelocityX="+saveShooterVelocityX+", shooter1.body.velocity.x="+shooter1.body.velocity.x);
+	console.log("\n\n\n\n\n\n*************\nfireButtonPressed: setting saveShooterVelocityX="+saveShooterVelocityX+", shooter1.body.velocity.x="+shooter1.body.velocity.x);
 
 	shooter1.body.velocity.setTo(0,0);
 
@@ -653,13 +660,16 @@ function fireButtonPressed() {
 	// var theShootingAngle = shooter1.angle;
 	// game.physics.velocityFromAngle( theShootingAngle, 400, aBall.body.velocity);
 	var r = drawLaserFrom( x0, y0, shooter1.angle );
+
+	console.log("\nfireButtonPressed: after drawLaserFrom\n\n\n");
+
 	laserLayerSprite1.visible = true;
 	laserLayerSprite1.alpha = 1;
 
 	if ( r.isReflectingBack ) {
 		console.log("adding timer event");
 		laserTimerEvent = game.time.events.loop(100, laserTimerEventCallback, this);
-		totalHealthShooter -= 1;
+		if ( debug != 1 ) totalHealthShooter -= 1;
 	}
 	if ( r.prizeArr.length > 0 ) {
 
@@ -961,10 +971,14 @@ function drawLaserFrom( x0, y0, angle ) {
 		laserLayerBM1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
 		
 		isReflectingBack = calcuatedLineSegmentInfo.isReflectingBack;
+
 		prizeArr = prizeArr.concat( calcuatedLineSegmentInfo.prizeArr );
-		console.log("drawLaserFrom: calcuatedLineSegmentInfo.prizeArr.length="+calcuatedLineSegmentInfo.prizeArr.length);
-		console.log("drawLaserFrom: prizeArr.length="+prizeArr.length);
+		//console.log("drawLaserFrom: calcuatedLineSegmentInfo.prizeArr.length="+calcuatedLineSegmentInfo.prizeArr.length);
+		//console.log("drawLaserFrom: prizeArr.length="+prizeArr.length);
+
 		laserDirection = calcuatedLineSegmentInfo.laserReflectionDirection;
+		if ( debug == 1 ) console.log("drawLaserFrom: calcuatedLineSegmentInfo.laserReflectionDirection="+stringForDir(laserDirection));
+
 		lx0 = calcuatedLineSegmentInfo.x1;
 		ly0 = calcuatedLineSegmentInfo.y1;
 		if ( !calcuatedLineSegmentInfo.isLastSegment ) {
@@ -1041,7 +1055,7 @@ function calcLineSegment( direction, x0, y0 ) {
 	var r = {x0:x0, y0:y0, isReflectingBack:false, isLastSegment:true};
 	var spriteCollide = firstSpriteHit( direction, x0, y0 );	
 	if ( spriteCollide ) {
-		console.log("calcLineSegment: spriteCollide!!!");
+		console.log("calcLineSegment: sprite found for line segment! sprite.x="+spriteCollide.x+", sprite.y="+spriteCollide.y+", sprite.angle="+spriteCollide.angle);
 		var hitInfo = calcHitPoint( direction, spriteCollide, x0, y0 );
 		r.x1 = hitInfo.x1;
 		r.y1 = hitInfo.y1;
@@ -1080,27 +1094,39 @@ function collectPrizesOnLine( d, x0, y0, x1, y1 ) {
 			prizeArr.push( prize );
 		}
 	});
-	console.log("collectPrizesOnLine: prizeArr.length="+prizeArr.length);
+	console.log("collectPrizesOnLine: OUT  prizeArr.length="+prizeArr.length);
 	return prizeArr;
 }
 
+function isShapeOnPath2( shape, d, x0, y0 ) {
+	var line = lineFromDirectionAndXY( d, x0, y0 );
+	return isPrizeOrShapeOnLine( shape, shapeWidth, d, x0, y0, line.x1, line.y1 );
+}
 function isPrizeOnLine( prize, d, x0, y0, x1, y1 ) {
-	console.log("isPrizeOnLine: prize.x="+prize.x+", y="+prize.y+", d.isUp|d.isDown="+(d.isUp|d.isDown)+", x0="+x0+", y0="+y0+", x1="+x1+",y1="+y1);
-	var dx, dy;
+	return isPrizeOrShapeOnLine( prize, prizeWidth, d, x0, y0, x1, y1 );
+}
+
+function isPrizeOrShapeOnLine( obj, sw, d, x0, y0, x1, y1 ) {
+	//console.log("isPrizeOrShapeOnLine: obj.x="+obj.x+", y="+obj.y+", d.isUp|d.isDown="+(d.isUp|d.isDown)+", x0="+x0+", y0="+y0+", x1="+x1+",y1="+y1);
+	//var dx, dy;
+	if ( Math.abs(obj.x-x0) < shapeWidth/2 && Math.abs(obj.y-y0) < shapeWidth/2 ) {
+		// ignore this "obj" because we are starting our line from within it!
+		return false; 
+	}
 	var laserX = x0;
 	var laserY = y0;
-	var threshold = laserWidth/2 + prizeWidth/2;
+	var threshold = laserWidth/2 + sw/2;
 	if ( d.isUp || d.isDown ) {
-		if ( isBetween( prize.y, y0, y1 ) ) {
-			if ( Math.abs(prize.x - laserX) < threshold ) {
-				console.log("isPrizeOnLine: FOUND PRIZE!!! dx="+Math.abs(prize.x - laserX)+", laserX="+laserX+", prize.x="+prize.x+", prize.y="+prize.y+" is between y0="+y0+", y1="+y1);
+		if ( isBetween( obj.y, y0, y1 ) ) {
+			if ( Math.abs(obj.x - laserX) < threshold ) {
+				//console.log("isPrizeOrShapeOnLine: FOUND PRIZE/SHAPE !!! dx="+Math.abs(obj.x - laserX)+", laserX="+laserX+", obj.x="+obj.x+", obj.y="+obj.y+" is between y0="+y0+", y1="+y1);
 				return true;
 			}
 		}
 	} else {
-		if ( isBetween(prize.x, x0, x1) ) {
-			if ( Math.abs(prize.y - laserY) < threshold ) {
-				console.log("isPrizeOnLine: FOUND PRIZE!!! dy="+Math.abs(prize.y - laserY)+", laserY="+laserY+", prize.y="+prize.x+", prize.x="+prize.x+" is between x0="+x0+", x1="+x1);
+		if ( isBetween(obj.x, x0, x1) ) {
+			if ( Math.abs(obj.y - laserY) < threshold ) {
+				//console.log("isPrizeOrShapeOnLine: FOUND PRIZE/SHAPE!!! dy="+Math.abs(obj.y - laserY)+", laserY="+laserY+", obj.y="+obj.x+", obj.x="+obj.x+" is between x0="+x0+", x1="+x1);
 				return true;
 			}
 		}
@@ -1109,7 +1135,6 @@ function isPrizeOnLine( prize, d, x0, y0, x1, y1 ) {
 }
 function isBetween( x, a, b ) {
 	return (a < x && x < b) || (a > x && x > b);
-	//return (y0 < prize.y && prize.y < y1) || (y0 > prize.y && prize.y > y1);
 }
 
 function lineFromDirectionAndXY( direction, x, y ) {
@@ -1335,31 +1360,30 @@ function firstSpriteHit( direction, x0, y0 ) {
 // and sorted so that the closest shape is first
 // ...the "path" this function considers is a straight 
 // line from the inx0/iny0 coords
-function findObjectsOnPath( d, inx0, iny0 ) {
+function findObjectsOnPath( d, x0, y0 ) {
 
-	console.log("findObjectsOnPath: inx0="+inx0+", iny0="+iny0);
+	//console.log("findObjectsOnPath: inx0="+inx0+", iny0="+iny0);
 
 	var objsOnPath = [];
 
-	xy0 = snapToShapeGrid({x:inx0,y:iny0});
-	var x0 = xy0.x;
-	var y0 = xy0.y;
+	// xy0 = snapToShapeGrid({x:inx0,y:iny0});
+	// var x0 = xy0.x;
+	// var y0 = xy0.y;
 
-	console.log("findObjectsOnPath: x0="+x0+", y0="+y0);
+	if ( debug == 1 ) {
+		console.log("findObjectsOnPath: IN  "+stringForDir(d)+", x0="+x0+", y0="+y0);
+	}
 
-	var savedShape;
 	for (var i=0; i < reflectorGroup1.length; i++) {
 		var shape = reflectorGroup1.getAt(i);
 		if ( shape.alive ) {
-			if ( !isShapeOnPath( d, shape, x0, y0 ) ) {
+			if ( !isShapeOnPath2( shape, d, x0, y0 ) ) {
 				continue;
 			}
-			console.log("findObjectsOnPath: shape.x="+shape.x+", shape.y="+shape.y);
+			//console.log("findObjectsOnPath: shape.x="+shape.x+", shape.y="+shape.y);
 			objsOnPath.push( shape );
 		}
 	}
-
-	console.log("findObjectsOnPath: after loop");
 
 	// sort objsOnPath so that the top of the array is the closest to x0/y0
 	objsOnPath.sort(function (a,b) {
@@ -1374,12 +1398,13 @@ function findObjectsOnPath( d, inx0, iny0 ) {
 	});
 
 	// for debugging...
-	if ( objsOnPath.length > 0 ) {
-		console.log("findObjectsOnPath: showing objsOnPath");
-		for (var ii=0; ii < objsOnPath.length; ii++) {
-			console.log("findObjectsOnPath: objsOnPath["+ii+"].x="+objsOnPath[ii].x+", .y="+objsOnPath[ii].y);
-		}
-	}
+	// if ( objsOnPath.length > 0 ) {
+	// 	console.log("findObjectsOnPath: showing objsOnPath");
+	// 	for (var ii=0; ii < objsOnPath.length; ii++) {
+	// 		console.log("findObjectsOnPath: objsOnPath["+ii+"].x="+objsOnPath[ii].x+", .y="+objsOnPath[ii].y);
+	// 	}
+	// }
+
 	return objsOnPath;
 }
 
@@ -1703,6 +1728,14 @@ function resetObjectPositions( objectsToMoveArr ) {
 		// b.x = point.x;
 		// b.y = point.y;
 	});
+}
+
+function stringForDir(d) {
+	if ( !d ) return "direction NONE";
+	if ( d.isUp ) return "direction isUp";
+	if ( d.isDown ) return "direction isDown";
+	if ( d.isLeft ) return "direction isLeft";
+	if ( d.isRight) return "direction isRight";
 }
 
 // finally

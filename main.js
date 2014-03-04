@@ -14,6 +14,7 @@ var debug=0
 
 // define globals here
 var gridSize = 100;
+var halfGridSize = 50;
 var numBlocksVertical;
 var numBlocksHorizontal;
 
@@ -49,7 +50,7 @@ var laserLayerTexture1sprite;
 var prettyBackgroundLayer1;
 
 var reflectorGroup1;
-var blankSpaceBufferX = 100, blankSpaceBufferY = 100;
+var blankSpaceBufferX = gridSize, blankSpaceBufferY = gridSize;
 
 var cursors;
 
@@ -342,7 +343,7 @@ game_state.main.prototype = {
 		laserLayerSprite1 = game.add.sprite(0,0,laserLayerBM1);
 		laserLayerSprite1.visible = false;
 
-		shooter1 = game.add.sprite(game.world.centerX, 50, "shooter1");
+		shooter1 = game.add.sprite(game.world.centerX, halfGridSize, "shooter1");
 		shooter1.anchor.setTo(0.5,0.5);
 		shooter1.visible = false;
 
@@ -380,46 +381,46 @@ game_state.main.prototype = {
     //blackBg.setStrokeStyle(laserWidth);
     //blackBg.strokeStyle('#f00');
     
-    var introPrize1 = game.add.sprite(gridSize/2,game.world.height-gridSize/2*3, "greenBox");
+    var introPrize1 = game.add.sprite(halfGridSize,game.world.height-halfGridSize*3, "greenBox");
     introPrize1.anchor.setTo(0.5,0.5);
     introPrize1.scale.setTo(2,2);
     introInfoGroup.add( introPrize1 );
-    var introPrize2 = game.add.sprite(game.world.centerX, game.world.height-gridSize/2, "greenBox");
+    var introPrize2 = game.add.sprite(game.world.centerX, game.world.height-halfGridSize, "greenBox");
     introPrize2.anchor.setTo(0.5,0.5);
     introPrize2.scale.setTo(2,2);
     introInfoGroup.add( introPrize2 );
-    var introPrize3 = game.add.sprite(game.world.width-gridSize/2, 5*gridSize/2, "greenBox");
+    var introPrize3 = game.add.sprite(game.world.width-halfGridSize, 5*halfGridSize, "greenBox");
     introPrize3.anchor.setTo(0.5,0.5);
     introPrize3.scale.setTo(2,2);
     introInfoGroup.add( introPrize3 );
 
     blackBg.lineStyle(10, 0xFF0000, 1);
-    blackBg.moveTo(50,50);
-    blackBg.lineTo(game.world.width-gridSize/2,gridSize/2);
-    blackBg.lineTo(game.world.width-gridSize/2,game.world.height-gridSize/2);
-    blackBg.lineTo(gridSize/2,game.world.height-gridSize/2);
-    blackBg.lineTo(gridSize/2,gridSize/2+gridSize*3);
+    blackBg.moveTo(halfGridSize,halfGridSize);
+    blackBg.lineTo(game.world.width-halfGridSize,halfGridSize);
+    blackBg.lineTo(game.world.width-halfGridSize,game.world.height-halfGridSize);
+    blackBg.lineTo(halfGridSize,game.world.height-halfGridSize);
+    blackBg.lineTo(halfGridSize,halfGridSize+gridSize*3);
 
     // *** add graphics to the intro screen (i.e. show the pieces)
     //blackBg.alpha = 0.1;
-    var introShooter = game.add.sprite(50,50, "shooter1");
+    var introShooter = game.add.sprite(halfGridSize,halfGridSize, "shooter1");
     introShooter.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introShooter );
-    var introTri1 = game.add.sprite(game.world.width-gridSize/2,gridSize/2, "triangleReflector1");
+    var introTri1 = game.add.sprite(game.world.width-halfGridSize,halfGridSize, "triangleReflector1");
     introTri1.anchor.setTo(0.5,0.5);
     introTri1.angle=180;
     introInfoGroup.add( introTri1 );
-    var introTri2 = game.add.sprite(game.world.width-gridSize/2,game.world.height-gridSize/2, "triangleReflector1");
+    var introTri2 = game.add.sprite(game.world.width-halfGridSize,game.world.height-halfGridSize, "triangleReflector1");
     introTri2.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introTri2 );
     introTri2.angle=270;
-    var introTri3 = game.add.sprite(gridSize/2,game.world.height-gridSize/2, "triangleReflector1");
+    var introTri3 = game.add.sprite(halfGridSize,game.world.height-halfGridSize, "triangleReflector1");
     introTri3.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introTri3 );
-		var introBlocker = game.add.sprite(gridSize/2,3*gridSize+gridSize/2, "blocker1");
+		var introBlocker = game.add.sprite(halfGridSize,3*gridSize+halfGridSize, "blocker1");
     introBlocker.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introBlocker );
-    var introReflector = game.add.sprite(gridSize/2,2*gridSize+gridSize/2, "boxReflector1");
+    var introReflector = game.add.sprite(halfGridSize,2*gridSize+halfGridSize, "boxReflector1");
     introReflector.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introReflector );
     
@@ -584,16 +585,15 @@ function createGameElement( shapeName, canRotate, canDrag ) {
 
 	var shape = game.add.sprite( rx, ry, shapeName );
 	shape.anchor.setTo(0.5,0.5);
-	if ( shapeName === "triangleReflector1" ) {
-		shape.body.setPolygon( 0,0, 100,100, 0,100 );
-	}
+	// if ( shapeName === "triangleReflector1" ) {
+	// 	shape.body.setPolygon( 0,0, 100,100, 0,100 );
+	// }
 	
 	if ( canRotate ) {
 		shape.angle = Math.floor(Math.random() * 4) * 90;
-		//var rotation = Phaser.Math.degToRad(Phaser.Math.wrapAngle(shape.angle));
-		shape.body.translate( -50,-50 );
-		shape.body.polygon.rotate(shape.rotation);
-		shape.body.translate( 50, 50 );
+		// shape.body.translate( -50,-50 );
+		// shape.body.polygon.rotate(shape.rotation);
+		// shape.body.translate( 50, 50 );
 	}
 
 	shape.body.linearDamping = 0.1;
@@ -614,8 +614,8 @@ function createGameElement( shapeName, canRotate, canDrag ) {
 }
 
 function fixSnapLocationReflector( reflectorSprite ) {
-	reflectorSprite.x = Phaser.Math.snapToFloor( reflectorSprite.x, 100 ) + 50;
-	reflectorSprite.y = Phaser.Math.snapToFloor( reflectorSprite.y, 100 ) + 50;
+	reflectorSprite.x = Phaser.Math.snapToFloor( reflectorSprite.x, gridSize ) + halfGridSize;
+	reflectorSprite.y = Phaser.Math.snapToFloor( reflectorSprite.y, gridSize ) + halfGridSize;
 }
 
 function fireButtonPressed() {
@@ -1166,15 +1166,15 @@ function calcHitPoint( direction, spriteCollide, x0, y0 ) {
 
 		if ( direction.isDown ) {
 			r.x1 = x0;
-			r.y1 = spriteCollide.y-50;
+			r.y1 = spriteCollide.y-halfGridSize;
 		} else if ( direction.isUp ) {
 			r.x1 = x0;
-			r.y1 = spriteCollide.y+50;
+			r.y1 = spriteCollide.y+halfGridSize;
 		} else if ( direction.isLeft ) {
-			r.x1 = spriteCollide.x+50;
+			r.x1 = spriteCollide.x+halfGridSize;
 			r.y1 = y0;
 		} else {
-			r.x1 = spriteCollide.x-50;
+			r.x1 = spriteCollide.x-halfGridSize;
 			r.y1 = y0;
 		}
 		
@@ -1558,7 +1558,7 @@ function reorientShooterAsNecessary() {
 }
 
 function snapToShapeGrid( xy ) {
-	return {x:Phaser.Math.snapToFloor(xy.x,100)+50, y:Phaser.Math.snapToFloor(xy.y,100)+50};
+	return {x:Phaser.Math.snapToFloor(xy.x,gridSize)+halfGridSize, y:Phaser.Math.snapToFloor(xy.y,gridSize)+halfGridSize};
 }
 
 function hasShapeAtXY( x, y ) {
@@ -1633,8 +1633,8 @@ function findEmptyGridLocation() {
 	var rx, ry;
 	var hasShapeAtRxRy;
 	while (hasShapeAtRxRy || rx == null ) {
-		rx = (Math.floor(Math.random() * numBlocksHorizontal)+1) * gridSize + gridSize/2;
-		ry = (Math.floor(Math.random() * numBlocksVertical)+1) * gridSize + gridSize/2;
+		rx = (Math.floor(Math.random() * numBlocksHorizontal)+1) * gridSize + halfGridSize;
+		ry = (Math.floor(Math.random() * numBlocksVertical)+1) * gridSize + halfGridSize;
 		hasShapeAtRxRy = hasShapeAt({x:rx,y:ry});
 		//if (hasShapeAtRxRy) console.log("hasShapeAtRxRy=true, getting another rx/ry");
 	}

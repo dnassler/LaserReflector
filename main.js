@@ -2,22 +2,25 @@ var pixelRatio = window.devicePixelRatio;
 var w = window.innerWidth ;//* pixelRatio,
     h = window.innerHeight ;//* pixelRatio;
 
-const SAFE_ZONE_WIDTH=2048;
-const SAFE_ZONE_HEIGHT=1536; //1344;
+// const SAFE_ZONE_WIDTH=2048;
+// const SAFE_ZONE_HEIGHT=1536; //1344;
+const SAFE_ZONE_WIDTH=1200;
+const SAFE_ZONE_HEIGHT=800;
 
 //var game = new Phaser.Game( (h > w) ? h : w, (h > w) ? w : h, Phaser.CANVAS, 'game_div');
 var game = new Phaser.Game( SAFE_ZONE_WIDTH, SAFE_ZONE_HEIGHT, Phaser.AUTO, 'game_div');
 
 var game_state = {};
 
-var debug=1
+var debug=0;
 
 
 // define globals here
 
 var gridSize = 100;
-var halfGridSize = 50;
+var halfGridSize = gridSize/2;
 
+var shapeScale = 1;
 var shapeWidth = 100;
 var laserWidth = 10;
 var prizeWidth = 34;
@@ -42,7 +45,7 @@ var maxHealthShooter = 5;
 
 var gameLevelTimer;
 var gameOver = true;
-var shooterDead = false;
+var shooterDead = true;
 
 var boxReflector1;
 var triangleReflector1;
@@ -311,6 +314,7 @@ game_state.main.prototype = {
 		// }
 
 		game.input.onDown.add( clickListener );
+		game.input.onUp.add( touchListenerOnUp );
 
 		fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 		fireButton.onDown.add( fireButtonPressed );
@@ -352,8 +356,14 @@ game_state.main.prototype = {
 		shooter1.anchor.setTo(0.5,0.5);
 		shooter1.visible = false;
 
+		// scale the blocks/triangles/shooter appropriately
+		allGridObjectsArr.forEach(function(e){
+			e.scale.setTo( shapeScale, shapeScale );
+		});
+		shooter1.scale.setTo( shapeScale, shapeScale );
+
 		// --
-		rightLimitX = game.world.width - shooter1.width/2 - shooter1.width;
+		rightLimitX = game.world.width - shooter1.width/2 - shooter1.width; //<<<<1
 		topLimitY = shooter1.height / 2;
 		bottomLimitY = game.world.height - shooter1.height/2;
 		leftLimitX = shooter1.width/2;
@@ -535,9 +545,10 @@ game_state.main.prototype = {
 		// game.debug.renderInputInfo(10,400);
 
 		//game.debug.renderSpriteInfo(shooter1,10,600);
-    game.debug.renderText("w="+w+", h="+h+", window.devicePixelRatio="+window.devicePixelRatio,10,10);
-    game.debug.renderText("game.width="+game.width+", game.height="+game.height,10,50);
-    game.debug.renderText("screen.width="+screen.width+", screen.height="+screen.height,10,100);
+		
+    // game.debug.renderText("w="+w+", h="+h+", window.devicePixelRatio="+window.devicePixelRatio,10,10);
+    // game.debug.renderText("game.width="+game.width+", game.height="+game.height,10,50);
+    // game.debug.renderText("screen.width="+screen.width+", screen.height="+screen.height,10,100);
 
 	}
 
@@ -627,18 +638,26 @@ function fixSnapLocationReflector( reflectorSprite ) {
 
 function fireButtonPressed() {
 
+	console.log("fireButtonPressed IN");
+
 	// since the SPACEBAR is used to start the gameplay (as well as shooting the laser)
 	// we need to do a few checks to decide if we need to restart the game 
 	// or to shoot the laser.
+	if ( !gameOver && shooterDead ) {
+		console.log("fireButtonPressed: ignoring because the shooter is dead")
+		return;
+	}
 	if ( gameOver || shooterDead ) {
-		if ( !gameOver ) return; // ignore the fire button right now
 		if ( game.time.now > timeMarkerGameOver ) {
 			// the user pressed the fire button after a game over occurred after
 			// a preset amount of time
 			restartGame();
+			return;
 		}
+		console.log("fireButtonPressed: game is over or the shooter is dead so ignoring the fire button");
 		return;
 	}
+	console.log("fireButtonPressed: shooter must not be dead. shooterDead="+shooterDead);
 
 	laserFiring = true;
 
@@ -755,6 +774,7 @@ function fireButtonPressed() {
 }
 
 function fireButtonReleased() {
+	if ( !laserFiring ) return;
 	console.log("fireButtonReleased!");
 	laserLayerSprite1.visible = false;
 	laserFiring = false;
@@ -797,6 +817,7 @@ function shooterDies() {
 
 function gameLevelTimeout() {
 	gameOver = true;
+	shooterDead = true; // shooter is considered "dead" unless it is alive
 	game.time.events.remove(gameLevelTimerEvent);
 	shooter1.visible = false;
 
@@ -995,7 +1016,7 @@ function drawLaserFrom( x0, y0, angle ) {
 	//laserLayerBM1.fill();
 	
 	// not sure if I need to do the below!
-	if (false) laserLayerSprite1.loadTexture(laserLayerBM1); //<<<<1
+	if (false) laserLayerSprite1.loadTexture(laserLayerBM1);
 	
 
 
@@ -1008,11 +1029,30 @@ function drawLaserFrom( x0, y0, angle ) {
 	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, prizeArr:prizeArr};
 }
 
+function touchListenerOnUp() {
+	if ( laserFiring ) {
+		fireButtonReleased();
+	}
+}
+
 function clickListener() {
 	console.log("\n\nclickListener: IN***");
+
+	if (gameOver) {
+		// clicking anywhere on the surface will start the game
+		fireButtonPressed();
+	}
+
 	// console.log("clickListener: input.x="+game.input.x+", input.y="+game.input.y);
 	var sp = snapToShapeGrid( {x:game.input.x,y:game.input.y} );
-	// console.log("clickListener: snapped to x="+sp.x+", y="+sp.y);
+	console.log("clickListener: snapped to x="+sp.x+", y="+sp.y);
+
+	if ( game.input.y > bottomLimitY - shapeWidth/2 ) {
+		// only fire the button if the surface was touched at the bottom of the screen
+		fireButtonPressed();
+		return;
+	}
+
 	var r = hasShapeAt({x:game.input.x, y:game.input.y});
 	if ( r ) {
 		// console.log("clickListener: hasShapeAt returned a shape: shapeName="+r.name+", r.x="+r.x+", r.y="+r.y);
@@ -1109,7 +1149,7 @@ function isPrizeOnLine( prize, d, x0, y0, x1, y1 ) {
 function isPrizeOrShapeOnLine( obj, sw, d, x0, y0, x1, y1 ) {
 	//console.log("isPrizeOrShapeOnLine: obj.x="+obj.x+", y="+obj.y+", d.isUp|d.isDown="+(d.isUp|d.isDown)+", x0="+x0+", y0="+y0+", x1="+x1+",y1="+y1);
 	//var dx, dy;
-	if ( Math.abs(obj.x-x0) < shapeWidth/2 && Math.abs(obj.y-y0) < shapeWidth/2 ) {
+	if ( Math.abs(obj.x-x0) < sw/2 && Math.abs(obj.y-y0) < sw/2 ) {
 		// ignore this "obj" because we are starting our line from within it!
 		return false; 
 	}
@@ -1189,17 +1229,18 @@ function calcHitPoint( direction, spriteCollide, x0, y0 ) {
 	} else {
 		// hit is on "flat" surface (i.e. box or non-diagonal triangle)
 
+		var halfShapeWidth = shapeWidth/2;
 		if ( direction.isDown ) {
 			r.x1 = x0;
-			r.y1 = spriteCollide.y-halfGridSize;
+			r.y1 = spriteCollide.y-halfShapeWidth;
 		} else if ( direction.isUp ) {
 			r.x1 = x0;
-			r.y1 = spriteCollide.y+halfGridSize;
+			r.y1 = spriteCollide.y+halfShapeWidth;
 		} else if ( direction.isLeft ) {
-			r.x1 = spriteCollide.x+halfGridSize;
+			r.x1 = spriteCollide.x+halfShapeWidth;
 			r.y1 = y0;
 		} else {
-			r.x1 = spriteCollide.x-halfGridSize;
+			r.x1 = spriteCollide.x-halfShapeWidth;
 			r.y1 = y0;
 		}
 		

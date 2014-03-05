@@ -180,6 +180,9 @@ game_state.main.prototype = {
 
 		gameOver = true;
 
+		this.game.onPause.add(gamePaused, this);
+		this.game.onResume.add(gameResumed, this);
+
 		// ==
 
 		// var lGameScale=Math.round(10000 * Math.min(game.width/SAFE_ZONE_WIDTH,game.height / SAFE_ZONE_HEIGHT)) / 10000;
@@ -573,6 +576,13 @@ game_state.main.prototype = {
 
 	}
 
+}
+
+function gamePaused() {
+	audioBackground.pause();
+}
+function gameResumed() {
+	audioBackground.resume();
 }
 
 function updateGameLevelTimer() {

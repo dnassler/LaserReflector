@@ -358,7 +358,7 @@ game_state.main.prototype = {
 		shooter1.anchor.setTo(0.5,0.5);
 		shooter1.visible = false;
 
-		fireButtonSprite = game.add.button(game.world.width-100,game.world.height-100, "fireButton", null, this, 1,0,2);
+		fireButtonSprite = game.add.button(game.world.width-100,game.world.height-100, "fireButton", null, this, 0,0,2);
 		fireButtonSprite.onInputDown.add(fireButtonPressed);
 		fireButtonSprite.onInputUp.add(fireButtonReleased);
 

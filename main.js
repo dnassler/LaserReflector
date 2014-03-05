@@ -5,7 +5,7 @@ var w = window.innerWidth ;//* pixelRatio,
 // const SAFE_ZONE_WIDTH=2048;
 // const SAFE_ZONE_HEIGHT=1536; //1344;
 const SAFE_ZONE_WIDTH=1200;
-const SAFE_ZONE_HEIGHT=800;
+const SAFE_ZONE_HEIGHT=900;
 
 //var game = new Phaser.Game( (h > w) ? h : w, (h > w) ? w : h, Phaser.CANVAS, 'game_div');
 var game = new Phaser.Game( SAFE_ZONE_WIDTH, SAFE_ZONE_HEIGHT, Phaser.AUTO, 'game_div');

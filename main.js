@@ -157,6 +157,8 @@ game_state.main.prototype = {
 
 		game.load.image('greenBox', "assets/greenBox.png");
 
+		game.load.spritesheet('fireButton', 'assets/buttons/FireButton3Frames.png',100,100);
+
 		// ==
 		// sounds...
 
@@ -314,7 +316,7 @@ game_state.main.prototype = {
 		// }
 
 		game.input.onDown.add( clickListener );
-		game.input.onUp.add( touchListenerOnUp );
+		//game.input.onUp.add( touchListenerOnUp );
 
 		fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 		fireButton.onDown.add( fireButtonPressed );
@@ -356,11 +358,17 @@ game_state.main.prototype = {
 		shooter1.anchor.setTo(0.5,0.5);
 		shooter1.visible = false;
 
+		fireButtonSprite = game.add.button(game.world.width-100,game.world.height-100, "fireButton", null, this, 1,0,2);
+		fireButtonSprite.onInputDown.add(fireButtonPressed);
+		fireButtonSprite.onInputUp.add(fireButtonReleased);
+
 		// scale the blocks/triangles/shooter appropriately
-		allGridObjectsArr.forEach(function(e){
-			e.scale.setTo( shapeScale, shapeScale );
-		});
-		shooter1.scale.setTo( shapeScale, shapeScale );
+		if ( shapeScale != 1 ) {
+			allGridObjectsArr.forEach(function(e){
+				e.scale.setTo( shapeScale, shapeScale );
+			});
+			shooter1.scale.setTo( shapeScale, shapeScale );
+		}
 
 		// --
 		rightLimitX = game.world.width - shooter1.width/2 - shooter1.width; //<<<<1
@@ -1060,11 +1068,11 @@ function clickListener() {
 	var sp = snapToShapeGrid( {x:game.input.x,y:game.input.y} );
 	console.log("clickListener: snapped to x="+sp.x+", y="+sp.y);
 
-	if ( game.input.y > bottomLimitY - shapeWidth/2 ) {
-		// only fire the button if the surface was touched at the bottom of the screen
-		fireButtonPressed();
-		return;
-	}
+	// if ( game.input.y > bottomLimitY - shapeWidth/2 ) {
+	// 	// only fire the button if the surface was touched at the bottom of the screen
+	// 	fireButtonPressed();
+	// 	return;
+	// }
 
 	var r = hasShapeAt({x:game.input.x, y:game.input.y});
 	if ( r ) {

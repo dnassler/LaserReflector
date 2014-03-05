@@ -130,13 +130,11 @@ var resizeGame = function () {
   // }
   // game.camera.setSize(width, height);
 
+  game.stage.scale.pageAlignHorizontally = true;
+  game.stage.scale.pageAlignVeritcally = true;
   game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL; //resize your window to see the stage resize too
-	game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;
 	game.stage.scale.setShowAll();
 	game.stage.scale.refresh();
-// 	  	numBlocksVertical = Math.floor(game.world.height/gridSize) - 2;
-// 		numBlocksHorizontal = Math.floor(game.world.width/gridSize) -3;
-// scrambleAllObjects();
 
 }
 
@@ -194,6 +192,8 @@ game_state.main.prototype = {
 		//game.stage.scale.startFullScreen();
 		game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;
 		game.stage.scale.setShowAll();
+		game.stage.scale.pageAlignHorizontally = true;
+		game.stage.scale.pageAlignVeritcally = true;
 		game.stage.scale.refresh();
 
 		numBlocksVertical = Math.floor(game.world.height/gridSize) - 2;
@@ -446,14 +446,26 @@ game_state.main.prototype = {
 
     game.time.events.add(Phaser.Timer.SECOND*2, function () {
     	introText.setText(
-    		"Welcome to LAZOR REFLEKTOR!!!\n\n"
-    		+ "Press '\\' for fullscreen (recommended).\n"
-    		+ "Press SPACEBAR to fire laser.\n"
+    		"Welcome to LAZOR REFLEKTOR!!!\n"
+    		+ "\n"
     		+ "Try to hit the green boxes without\n"
     		+ "hitting the blue reflector boxes.\n"
     		+ "Watch out for the triangle reflectors!\n"
     		+ "Note you only have "+maxGameLevelTime+" seconds of time\n"
     		+ "and are limited to "+maxHealthShooter+" lives.\n\n"
+    		+ "You may fire the the laser by touching\n"
+    		+ "the bottom of the game world.\n"
+    		+ "\n"
+    		+ "If you are using the iPad it is recommended\n"
+    		+ "that you play fullscreen which you can do\n"
+    		+ "(if you are using Safari) by adding this\n"
+    		+ "link to your 'Home Screen' and re-starting\n"
+    		+ "the game by clicking on the shortcut icon\n"
+    		+ "created which looks as if it was one of your\n"
+    		+ "installed Apps. If not playing on a tablet\n"
+    		+ "you may press the SPACEBAR to fire the\n"
+    		+ "laser and you may press '\\' for fullscreen.\n"
+    		//+ "press '\\' for fullscreen.\n"
     		// + "Players may want to control the shooter\n"
     		// + "acceleration around the game edge by using\n"
     		// + "the W/A/S/D keys. Also it is possible\n"
@@ -463,9 +475,10 @@ game_state.main.prototype = {
     		// + "'green box' hit. And BONUS points are\n"
     		// + "awarded based on the number of lives\n"
     		// + "remaining.\n\n"
+    		+ "\n"
     		+ "lazor.reflektor@gmail.com\n"
     		);
-    	gameOverlayText.setText("GAME OVER\n\npress spacebar\nto start");
+    	gameOverlayText.setText("GAME OVER\n\ntouch or press spacebar\nto start");
     	showIntroInfo();
     }, this);
 

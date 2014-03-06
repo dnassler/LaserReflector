@@ -174,6 +174,8 @@ game_state.main.prototype = {
 		game.load.audio('gameStart','assets/audio/start-game.mp3');
 		game.load.audio('gameOver','assets/audio/game-over.mp3');
 
+		game.load.bitmapFont('pressStart2P','assets/fonts/Press_Start_2P/font.png', 'assets/fonts/Press_Start_2P/font.xml');
+
 	},
 
 	create: function() {
@@ -380,11 +382,11 @@ game_state.main.prototype = {
 		leftLimitX = shooter1.width/2;
 
 		// --
-		var style = { font: "50px 'Press Start 2P'", fill: "#ff0044", align: "center" };
+		var style = { font: "50px PressStart2P", fill: "#ff0044", align: "center" };
 
-    scoreText = game.add.text(game.world.width-100, 10, "", style);
-    healthText = game.add.text(game.world.width-100, 110, "", style);
-    timerText = game.add.text(game.world.width-100, 210, "", style);
+    // scoreText.visible = true;
+    // healthText.visible = true;
+    // timerText.visible = true;
 
     finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#258acc", align: "center" });
 		// finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#ffffff", align: "center", stroke: "#258acc", strokeThickness: 8 });
@@ -392,11 +394,15 @@ game_state.main.prototype = {
     finalScoreText.anchor.setTo(0.5,0.5);
     finalScoreText.visible = false;
 
-    gameOverlayText = game.add.text( game.world.centerX, game.world.centerY, "", style );
+    gameOverlayText = game.add.bitmapText( game.world.centerX, game.world.centerY, "", style );
     gameOverlayText.anchor.setTo(0.5,0.5);
 
-    gameStartingText = game.add.text( game.world.centerX, game.world.centerY, "", style );
+    gameStartingText = game.add.bitmapText( game.world.centerX, game.world.centerY, "", style );
     gameStartingText.anchor.setTo(0.5,0.5);
+
+    scoreText = game.add.bitmapText(game.world.width-100, 10, "0", style);
+    healthText = game.add.bitmapText(game.world.width-100, 110, "0", style);
+    timerText = game.add.bitmapText(game.world.width-100, 210, "00", style);
 
     introInfoGroup = game.add.group();
     var blackBg = game.add.graphics(0,0);
@@ -450,8 +456,8 @@ game_state.main.prototype = {
     introReflector.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introReflector );
     
-		var introStyle = { font: "24px 'Press Start 2P'", fill: "#ff0044", align: "center" };
-    introText = game.add.text( game.world.centerX, game.world.centerY, "",	introStyle );
+		var introStyle = { font: "24px PressStart2P", fill: "#ff0044", align: "center" };
+    introText = game.add.bitmapText( game.world.centerX, game.world.centerY, "",	introStyle );
     introText.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introText );
 
@@ -590,7 +596,9 @@ function updateGameLevelTimer() {
 	if ( debug == 1 ) return;
 
 	gameLevelTimer -= 1;
-	timerText.setText(gameLevelTimer);
+	timerText.setText(gameLevelTimer.toString());
+
+	console.log("updateGameLevelTimer gameLevelTimer="+gameLevelTimer);
 
 	if ( gameLevelTimer <= 0 ) {
 		
@@ -754,8 +762,8 @@ function fireButtonPressed() {
 	}
 
 	// update score/health displayed
-	healthText.setText( totalHealthShooter );
-	scoreText.setText( totalPrizeHits );
+	healthText.setText( totalHealthShooter.toString() );
+	scoreText.setText( totalPrizeHits.toString() );
 
 	if ( r.isReflectingBack ) {
 		var d = shooterDirection();
@@ -899,9 +907,9 @@ function restartGame() {
 	totalPrizeHits = 0;
 	gameLevelTimer = maxGameLevelTime;
 
-	healthText.setText( totalHealthShooter );
-	scoreText.setText( totalPrizeHits );
-	timerText.setText( gameLevelTimer );
+	healthText.setText( totalHealthShooter.toString() );
+	scoreText.setText( totalPrizeHits.toString() );
+	timerText.setText( gameLevelTimer.toString() );
 	timerText.alpha = 1;
 
 	gameStartingText.setText("GET READY!\n\n3");
@@ -948,9 +956,9 @@ function restartLevel() {
 	shooter1.body.velocity.x = Phaser.Math.getRandom(movingLeftOrRight); //-defShooterVelocity; // make the direction random left/right
 	// also make the starting side random (top/bottom)
 
-	healthText.setText( totalHealthShooter );
-	scoreText.setText( totalPrizeHits );
-	timerText.setText( gameLevelTimer );
+	healthText.setText( totalHealthShooter.toString() );
+	scoreText.setText( totalPrizeHits.toString() );
+	timerText.setText( gameLevelTimer.toString() );
 	timerText.alpha = 1;
 
 }

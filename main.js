@@ -130,9 +130,9 @@ var resizeGame = function () {
   // }
   // game.camera.setSize(width, height);
 
-  game.stage.scale.pageAlignHorizontally = true;
-  game.stage.scale.pageAlignVeritcally = true;
-  game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL; //resize your window to see the stage resize too
+  // game.stage.scale.pageAlignHorizontally = true;
+  // game.stage.scale.pageAlignVeritcally = true;
+  // game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL; //resize your window to see the stage resize too
 	game.stage.scale.setShowAll();
 	game.stage.scale.refresh();
 
@@ -196,8 +196,7 @@ game_state.main.prototype = {
 		// ==
 
 		game.stage.fullScreenScaleMode = Phaser.StageScaleMode.SHOW_ALL;
-		//game.stage.scale.startFullScreen();
-		game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;
+		//game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;
 		game.stage.scale.setShowAll();
 		game.stage.scale.pageAlignHorizontally = true;
 		game.stage.scale.pageAlignVeritcally = true;

@@ -43,6 +43,8 @@ var timeMarkerGameOver = 0;
 var maxGameLevelTime = 99;
 var maxHealthShooter = 5;
 
+var timerTextTween = null;
+var extraGameTimePerPrize = 2;
 var gameLevelTimer;
 var gameOver = true;
 var shooterDead = true;
@@ -411,9 +413,12 @@ game_state.main.prototype = {
     gameStartingText = game.add.bitmapText( game.world.centerX, game.world.centerY, "", style );
     gameStartingText.anchor.setTo(0.5,0.5);
 
-    scoreText = game.add.bitmapText(game.world.width-100, 10, "0", style);
-    healthText = game.add.bitmapText(game.world.width-100, 110, "0", style);
-    timerText = game.add.bitmapText(game.world.width-100, 210, "00", style);
+    scoreText = game.add.bitmapText(game.world.width-10, 10, "0", style);
+    scoreText.anchor.setTo(1,0);
+    healthText = game.add.bitmapText(game.world.width-10, 110, "0", style);
+    healthText.anchor.setTo(1,0);
+    timerText = game.add.bitmapText(game.world.width-10, 210, "00", style);
+    timerText.anchor.setTo(1,0);
 
     introInfoGroup = game.add.group();
     var blackBg = game.add.graphics(0,0);
@@ -618,8 +623,13 @@ function updateGameLevelTimer() {
 
 		gameLevelTimeout();
 	} else if ( gameLevelTimer == 10 ) {
-		game.add.tween(timerText).to({alpha:0},100,Phaser.Easing.Linear.None,true)
+		timerTextTween = game.add.tween(timerText).to({alpha:0},100,Phaser.Easing.Linear.None,true)
 		.to({alpha:1},100,Phaser.Easing.Linear.None,true,0,100,true);
+	} else if ( gameLevelTimer > 10 ) {
+		if ( timerTextTween != null && timerTextTween.isRunning ) {
+			console.log("*************** stopping tween");
+			timerTextTween.stop();
+		}
 	}
 }
 
@@ -754,6 +764,10 @@ function fireButtonPressed() {
 			// 		.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true)
 			// 		.to({x:1,y:1}, 100, Phaser.Easing.Linear.None, true, 0)
 			// 		.loop() );
+			
+			// increase the game time for each prize hit
+			gameLevelTimer += extraGameTimePerPrize;
+
 			// flash the prizes that were hit by the laser!
 			p.wasHit = true;
 			game.add.tween(p.scale)

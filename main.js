@@ -805,7 +805,7 @@ function fireButtonPressed() {
 
 		//prizeHitEvent = game.time.events.loop(200, prizeHitTimerEventCallback, this);
 
-		totalPrizeHits += r.prizeArr.length * (r.numLaserBounces + 1);
+		totalPrizeHits += r.hitScore; //r.prizeArr.length * (r.numLaserBounces + 1);
 	}
 
 	// update score/health displayed
@@ -1082,6 +1082,11 @@ function drawLaserFrom( x0, y0, angle ) {
 	var laserDirection = shooterDirection();
 	var prizeArr = [];
 	var numLaserBounces = 0;
+	
+	// this is the accumulated prize hit score where prizes are worth more depending 
+	// on the number of bounces needed to reach them
+	var hitScore = 0;
+	
 	while ( !calcuatedLineSegmentInfo || !calcuatedLineSegmentInfo.isLastSegment ) {
 		
 		calcuatedLineSegmentInfo = calcLineSegment(laserDirection,lx0,ly0);
@@ -1091,6 +1096,8 @@ function drawLaserFrom( x0, y0, angle ) {
 		isReflectingBack = calcuatedLineSegmentInfo.isReflectingBack;
 
 		prizeArr = prizeArr.concat( calcuatedLineSegmentInfo.prizeArr );
+		hitScore += calcuatedLineSegmentInfo.prizeArr.length * (numLaserBounces+1);
+
 		//console.log("drawLaserFrom: calcuatedLineSegmentInfo.prizeArr.length="+calcuatedLineSegmentInfo.prizeArr.length);
 		//console.log("drawLaserFrom: prizeArr.length="+prizeArr.length);
 
@@ -1123,7 +1130,7 @@ function drawLaserFrom( x0, y0, angle ) {
 
 	console.log("drawLaserFrom: isReflectingBack="+isReflectingBack
 		+", prizeArr.length="+prizeArr.length);
-	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, prizeArr:prizeArr};
+	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, hitScore:hitScore, prizeArr:prizeArr};
 }
 
 function touchListenerOnUp() {

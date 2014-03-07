@@ -289,9 +289,13 @@ game_state.main.prototype = {
 			//if ( i<2 ) {
 			//	r.animations.add('flashSafeMode',[0,1,2], 1, true).play();
 			//}
-			r.animations.add('safeMode',[2,1,0], 1, false); // this is to be played when the user clicks on it
+			r.animations.add('safeMode',[2,1], 1, false); // this is to be played when the user clicks on it
 			r.animations.add('flashRed',[3,4], 4, true); // this is to be play'ed when hit with the laser
+			r.events.onAnimationComplete.add(function (r) {
+				r.frame=0;
+			}, r);
 			r.frame = 0;
+			console.log("r.")
 			boxReflectorArr.push( r );
 			allGridObjectsArr.push( r );
 		}
@@ -306,6 +310,7 @@ game_state.main.prototype = {
 		for (var i=0; i<10; i++) {
 			// do not allow the greenBox to be dragged
 			var r = prizeGroup.add( createGameElement("greenBox", false, false) );
+			r.wasHit = false;
 			prizeGroupArr.push( r );
 			allGridObjectsArr.push( r );
 		}
@@ -750,15 +755,19 @@ function fireButtonPressed() {
 			// 		.to({x:1,y:1}, 100, Phaser.Easing.Linear.None, true, 0)
 			// 		.loop() );
 			// flash the prizes that were hit by the laser!
+			p.wasHit = true;
 			game.add.tween(p.scale)
-				.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true)
+				.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true);
+			game.add.tween(p)
+				.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
 				.onComplete.add( function () {
 					var point = findEmptyGridLocation();
+					p.wasHit = false;
 					p.scale.setTo(1,1);
+					p.x = point.x;
+					p.y = point.y;
 					game.add.tween(p)
-						.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
-						.to({x:point.x,y:point.y}, 1, Phaser.Easing.Linear.None, true, 500)
-						.to({alpha:1}, 500, Phaser.Easing.Linear.None, true, 500);
+						.to({alpha:1}, 500, Phaser.Easing.Linear.None, true);
 				}, this);
 		});
 
@@ -1179,7 +1188,7 @@ function collectPrizesOnLine( d, x0, y0, x1, y1 ) {
 	// 		}
 	console.log("collectPrizesOnLine: IN");
 	prizeGroup.forEach(function (prize) {
-		if ( prize.alive && isPrizeOnLine( prize, d, x0, y0, x1, y1 ) ) {
+		if ( prize.alive && !prize.wasHit && isPrizeOnLine( prize, d, x0, y0, x1, y1 ) ) {
 			console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
 			prizeArr.push( prize );
 		}
@@ -1295,10 +1304,17 @@ function calcHitPoint( direction, spriteCollide, x0, y0 ) {
 		}
 		
 		if ( spriteCollide.name == "boxReflector1" ) {
-			var currentFrame = spriteCollide.animations.getAnimation('safeMode').frame;
-			console.log("******** boxReflector1 frame="+currentFrame);//<<<<1 !!!!!!! not working !!!!!!!
-			if ( currentFrame == 0 ) {
+			//var currentFrame = spriteCollide.animations.getAnimation('safeMode').frame;
+			var currentFrame = spriteCollide.frame;
+			var animation = spriteCollide.animations.getAnimation('safeMode');
+			console.log("!!!!!!!******** boxReflector1 isPlaying="+animation.isPlaying+", frame="+currentFrame);//<<<<1 !!!!!!! not working !!!!!!!
+			if ( currentFrame == 0 && !animation.isPlaying ) {
 				r.isReflectingBack = true;
+				spriteCollide.play('flashRed');
+				game.time.events.add(1000, function() {
+					spriteCollide.animations.getAnimation('flashRed').stop();
+					spriteCollide.frame = 0;
+				});
 			}
 			r.laserReflectionDirection = invertLaserDirection(direction);
 		}

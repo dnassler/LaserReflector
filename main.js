@@ -146,7 +146,8 @@ game_state.main.prototype = {
 		// ==
 		// sprite images...
 
-		game.load.image('boxReflector1', "assets/squareBlue1.png");
+		//game.load.image('boxReflector1', "assets/squareBlue1.png");
+		game.load.spritesheet('boxReflector1', "assets/squareBlueSpritesheet.png", 100, 100);
 		game.load.image('triangleReflector1', "assets/triangleWhite1_0.png");
 		game.load.image('blocker1', "assets/square1.png");
 
@@ -284,7 +285,13 @@ game_state.main.prototype = {
 		}
 		boxReflectorArr = [];
 		for (var i=0; i<5; i++) {
-			var r = reflectorGroup1.add( createGameElement("boxReflector1") );
+			var r = reflectorGroup1.add( createGameElement("boxReflector1"), false, false, 0 );
+			//if ( i<2 ) {
+			//	r.animations.add('flashSafeMode',[0,1,2], 1, true).play();
+			//}
+			r.animations.add('safeMode',[2,1,0], 1, false); // this is to be played when the user clicks on it
+			r.animations.add('flashRed',[3,4], 4, true); // this is to be play'ed when hit with the laser
+			r.frame = 0;
 			boxReflectorArr.push( r );
 			allGridObjectsArr.push( r );
 		}
@@ -629,7 +636,7 @@ function fullscreenKeyPressed() {
 		game.stage.scale.startFullScreen();
 }
 
-function createGameElement( shapeName, canRotate, canDrag ) {
+function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
 	
 	//console.log("in createGameElement");
 
@@ -639,7 +646,7 @@ function createGameElement( shapeName, canRotate, canDrag ) {
 	ry = pointEmpty.y;
 	console.log("createGameElement: pointEmpty.x="+pointEmpty.x+", pointEmpty.y="+pointEmpty.y);
 
-	var shape = game.add.sprite( rx, ry, shapeName );
+	var shape = game.add.sprite( rx, ry, shapeName, frameNum );
 	shape.anchor.setTo(0.5,0.5);
 	// if ( shapeName === "triangleReflector1" ) {
 	// 	shape.body.setPolygon( 0,0, 100,100, 0,100 );
@@ -1092,30 +1099,35 @@ function clickListener() {
 	// }
 
 	var r = hasShapeAt({x:game.input.x, y:game.input.y});
-	if ( r ) {
-		// console.log("clickListener: hasShapeAt returned a shape: shapeName="+r.name+", r.x="+r.x+", r.y="+r.y);
-		// debugging...
-		var adjacentSpots = getFreeAdjacentLocations(r.x, r.y);
-		// console.log("clickListener: get free adjacent locations relative to x="+r.x+", y="+r.y+"... found "+adjacentSpots.length);
-		// adjacentSpots.forEach( function ( p ) { 
-			// console.log( "clickListener: free spot at point.x="+p.x+", point.y="+p.y ); 
-		// } );
-	// } else {
-	// 	console.log("clickListener: hasShapeAt returned NOTHING. Checking adjacent spots...");
-	// 	var adjacentSpots = getFreeAdjacentLocations(sp.x, sp.y);
-	// 	console.log("clickListener: get free adjacent locations relative to sp.x="+sp.x+", sp.y="+sp.y+"... found "+adjacentSpots.length);
-	// 	adjacentSpots.forEach( function ( p ) { 
-	// 		console.log( "clickListener: free spot at point.x="+p.x+", point.y="+p.y ); 
-	// 	} );
 
-	}
-	if ( r && isShapeTriangle(r) ) {
-		// make sure that the triangle isn't in the process of rotating
-		console.log("clickListener: clicked on triangle");
-		if ( r.angle == Phaser.Math.snapToFloor(r.angle, 90) ) {
-			rotateTriangleReflector(r, false);
-		} else {
-			console.log("clickListener: the triangle is rotating!!!!!!! Ignoring the click!")
+	// if ( r ) {
+	// 	// console.log("clickListener: hasShapeAt returned a shape: shapeName="+r.name+", r.x="+r.x+", r.y="+r.y);
+	// 	// debugging...
+	// 	var adjacentSpots = getFreeAdjacentLocations(r.x, r.y);
+	// 	// console.log("clickListener: get free adjacent locations relative to x="+r.x+", y="+r.y+"... found "+adjacentSpots.length);
+	// 	// adjacentSpots.forEach( function ( p ) { 
+	// 		// console.log( "clickListener: free spot at point.x="+p.x+", point.y="+p.y ); 
+	// 	// } );
+	// // } else {
+	// // 	console.log("clickListener: hasShapeAt returned NOTHING. Checking adjacent spots...");
+	// // 	var adjacentSpots = getFreeAdjacentLocations(sp.x, sp.y);
+	// // 	console.log("clickListener: get free adjacent locations relative to sp.x="+sp.x+", sp.y="+sp.y+"... found "+adjacentSpots.length);
+	// // 	adjacentSpots.forEach( function ( p ) { 
+	// // 		console.log( "clickListener: free spot at point.x="+p.x+", point.y="+p.y ); 
+	// // 	} );
+	// }
+
+	if ( r ) {
+		if ( isShapeTriangle(r) ) {
+			// make sure that the triangle isn't in the process of rotating
+			console.log("clickListener: clicked on triangle");
+			if ( r.angle == Phaser.Math.snapToFloor(r.angle, 90) ) {
+				rotateTriangleReflector(r, false);
+			} else {
+				console.log("clickListener: the triangle is rotating!!!!!!! Ignoring the click!")
+			}
+		} else if ( r.name == "boxReflector1" ) {
+			r.play("safeMode");
 		}
 	}
 	console.log("clickListener: OUT\n\n\n");
@@ -1283,7 +1295,11 @@ function calcHitPoint( direction, spriteCollide, x0, y0 ) {
 		}
 		
 		if ( spriteCollide.name == "boxReflector1" ) {
-			r.isReflectingBack = true;
+			var currentFrame = spriteCollide.animations.getAnimation('safeMode').frame;
+			console.log("******** boxReflector1 frame="+currentFrame);//<<<<1 !!!!!!! not working !!!!!!!
+			if ( currentFrame == 0 ) {
+				r.isReflectingBack = true;
+			}
 			r.laserReflectionDirection = invertLaserDirection(direction);
 		}
 

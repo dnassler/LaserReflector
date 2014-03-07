@@ -28,10 +28,14 @@ var prizeWidth = 34;
 var numBlocksVertical;
 var numBlocksHorizontal;
 
+var hideIntroInfoTimer;
 var introInfoGroup;
 var introText;
 
-var gameOverlayText; // this text will appear over game stage "Game Over", etc.
+var gameOverlayTextGroup; // this holds the text/buttons that overlays the game screen in-between games
+var gameOverlayText; // part of the gameOverlayTextGroup this text will appear over game stage "Game Over", etc.
+var gameHelpButton;
+
 var gameStartingText; // shows GET READY message that is displayed at game restart
 
 var timeMarkerUpdateBgTextGroup = 0;
@@ -161,6 +165,7 @@ game_state.main.prototype = {
 		game.load.image('greenBox', "assets/greenBox.png");
 
 		game.load.spritesheet('fireButton', 'assets/buttons/FireButton3Frames.png',100,100);
+		game.load.spritesheet('helpButton', 'assets/buttons/HelpButtonFrames.png',100,100);
 
 		// ==
 		// sounds...
@@ -407,20 +412,26 @@ game_state.main.prototype = {
     finalScoreText.anchor.setTo(0.5,0.5);
     finalScoreText.visible = false;
 
-    gameOverlayText = game.add.bitmapText( game.world.centerX, game.world.centerY, "", style );
-    gameOverlayText.anchor.setTo(0.5,0.5);
+    // the gameOverlayTextGroup holds the in-between games/game-over text and help button
+    gameOverlayTextGroup = game.add.group();
+    gameOverlayText = game.add.bitmapText( game.world.centerX, 200, "", style );
+    gameOverlayText.anchor.setTo(0.5,0);
+    gameOverlayTextGroup.add( gameOverlayText );
+    gameHelpButton = game.add.button(game.world.width-100,game.world.height-100, "helpButton", null, this, 0,0,2,0, gameOverlayTextGroup);
+    gameHelpButton.onInputDown.add( helpButtonCallback );
 
     gameStartingText = game.add.bitmapText( game.world.centerX, game.world.centerY, "", style );
     gameStartingText.anchor.setTo(0.5,0.5);
 
-    scoreText = game.add.bitmapText(game.world.width-10, 10, "0", style);
+    scoreText = game.add.bitmapText(game.world.width-10, 10, "", style);
     scoreText.anchor.setTo(1,0);
-    healthText = game.add.bitmapText(game.world.width-10, 110, "0", style);
+    healthText = game.add.bitmapText(game.world.width-10, 110, "", style);
     healthText.anchor.setTo(1,0);
-    timerText = game.add.bitmapText(game.world.width-10, 210, "00", style);
+    timerText = game.add.bitmapText(game.world.width-10, 210, "", style);
     timerText.anchor.setTo(1,0);
 
     introInfoGroup = game.add.group();
+    introInfoGroup.visible = false;
     var blackBg = game.add.graphics(0,0);
     introInfoGroup.add( blackBg );
     blackBg.beginFill("0x000000");
@@ -431,15 +442,15 @@ game_state.main.prototype = {
     
     var introPrize1 = game.add.sprite(halfGridSize,game.world.height-halfGridSize*3, "greenBox");
     introPrize1.anchor.setTo(0.5,0.5);
-    introPrize1.scale.setTo(2,2);
+    introPrize1.scale.setTo(1,1);
     introInfoGroup.add( introPrize1 );
     var introPrize2 = game.add.sprite(game.world.centerX, game.world.height-halfGridSize, "greenBox");
     introPrize2.anchor.setTo(0.5,0.5);
-    introPrize2.scale.setTo(2,2);
+    introPrize2.scale.setTo(1,1);
     introInfoGroup.add( introPrize2 );
     var introPrize3 = game.add.sprite(game.world.width-halfGridSize, 5*halfGridSize, "greenBox");
     introPrize3.anchor.setTo(0.5,0.5);
-    introPrize3.scale.setTo(2,2);
+    introPrize3.scale.setTo(1,1);
     introInfoGroup.add( introPrize3 );
 
     blackBg.lineStyle(10, 0xFF0000, 1);
@@ -472,47 +483,48 @@ game_state.main.prototype = {
     introReflector.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introReflector );
     
-		var introStyle = { font: "24px PressStart2P", fill: "#ff0044", align: "center" };
-    introText = game.add.bitmapText( game.world.centerX, game.world.centerY, "",	introStyle );
-    introText.anchor.setTo(0.5,0.5);
+		var introStyle = { font: "20px PressStart2P", fill: "#ff0044", align: "left" };
+    introText = game.add.bitmapText( 120, game.world.centerY, "",	introStyle );
+    introText.anchor.setTo(0,0.5);
     introInfoGroup.add( introText );
 
     game.time.events.add(Phaser.Timer.SECOND*2, function () {
     	introText.setText(
     		"Welcome to LAZOR REFLEKTOR!!!\n"
     		+ "\n"
-    		+ "Try to hit the green boxes without\n"
-    		+ "hitting the blue reflector boxes.\n"
-    		+ "Watch out for the triangle reflectors!\n"
-    		+ "Note you only have "+maxGameLevelTime+" seconds of time\n"
-    		+ "and are limited to "+maxHealthShooter+" lives.\n\n"
-    		+ "You may fire the the laser by touching\n"
-    		+ "the bottom of the game world.\n"
+    		+ "The object of the game is to fire your laser\n"
+    		+ "and try to hit the green prize boxes without\n"
+    		+ "hitting a blue reflector box because they\n"
+    		+ "will bounce the laser back along its path and\n"
+    		+ "kill you. The triangle shaped reflectors will\n"
+    		+ "bounce the laser and change it’s path. And\n"
+    		+ "the white boxes will absorb/block the laser.\n"
     		+ "\n"
-    		+ "If you are using the iPad it is recommended\n"
-    		+ "that you play fullscreen which you can do\n"
-    		+ "(if you are using Safari) by adding this\n"
-    		+ "link to your 'Home Screen' and re-starting\n"
-    		+ "the game by clicking on the shortcut icon\n"
-    		+ "created which looks as if it was one of your\n"
-    		+ "installed Apps. If not playing on a tablet\n"
-    		+ "you may press the SPACEBAR to fire the\n"
-    		+ "laser and you may press '\\' for fullscreen.\n"
-    		//+ "press '\\' for fullscreen.\n"
-    		// + "Players may want to control the shooter\n"
-    		// + "acceleration around the game edge by using\n"
-    		// + "the W/A/S/D keys. Also it is possible\n"
-    		// + "to drag and rotate the triangle pieces\n"
-    		// + "to shoot more strategically. The more\n"
-    		// + "the laser bounces, the more points per\n"
-    		// + "'green box' hit. And BONUS points are\n"
-    		// + "awarded based on the number of lives\n"
-    		// + "remaining.\n\n"
+    		+ "You can temporarily neutralize a blue reflector\n"
+    		+ "box by touching it (or clicking it). A laser \n"
+    		+ "beam that hits a neutralized box will not reflect\n"
+    		+ "backwards and so is safe to hit (but only very \n"
+    		+ "briefly).\n"
     		+ "\n"
+    		+ "You may drag the triangle reflectors around\n"
+    		+ "but they will rotate as you do so.\n"
+    		+ "\n"
+    		+ "Each prize hit will add to your score and will \n"
+    		+ "add 2 seconds of game time. The more times the \n"
+    		+ "laser is bounced around by the triangle \n"
+    		+ "reflectors, the more points per prize hit. But \n"
+    		+ "the more likely you will accidentally hit a blue \n"
+    		+ "reflector and so be killed.\n"
+    		+ "\n"
+    		+ "The game is over when all 5 player lives are\n"
+    		+ "lost or when you run out of time, whichever \n"
+    		+ "comes first.\n"
+    		+ "\n"
+    		+ "Feel free to leave comments or suggestions at\n"
     		+ "lazor.reflektor@gmail.com\n"
     		);
-    	gameOverlayText.setText("GAME OVER\n\ntouch or press spacebar\nto start");
-    	showIntroInfo();
+    	gameOverlayText.setText("LAZOR REFLEKTOR!!!\n\n\n\nGAME OVER\n\ntouch or press spacebar\nto start");
+    	//showIntroInfo();
     }, this);
 
 		// game.time.events.add(1000, function(){
@@ -605,6 +617,12 @@ function gamePaused() {
 }
 function gameResumed() {
 	audioBackground.resume();
+}
+
+function helpButtonCallback() {
+	console.log("helpButtonCallback: about to show intro info");
+	showIntroInfo();
+	console.log("helpButtonCallback: OUT");
 }
 
 function updateGameLevelTimer() {
@@ -850,6 +868,7 @@ function fireButtonReleased() {
 	if ( laserTimerEvent ) {
 		console.log("removing timer event");
 		game.time.events.remove(laserTimerEvent);
+		laserTimerEvent = null;
 	}
 	// if ( prizeHitEvent ) {
 	// 	console.log("removing prize hit event");
@@ -897,27 +916,37 @@ function gameLevelTimeout() {
 	game.add.tween(finalScoreText).to({y:game.world.centerY}, 1000, Phaser.Easing.Back.Out, true);
 	
 	game.time.events.add(Phaser.Timer.SECOND*2, function () {
-		gameOverlayText.visible = true;
+		gameOverlayTextGroup.visible = true;
 	}, this);
 
-	timeMarkerGameOver = game.time.now + 5000;
+	timeMarkerGameOver = game.time.now + 2000;
 
-	game.time.events.add(Phaser.Timer.SECOND * 20, showIntroInfo, this);
+	//game.time.events.add(Phaser.Timer.SECOND * 20, showIntroInfo, this);
 }
 
 function showIntroInfo() {
 	if ( debug==1 ) return;
 	if ( !gameOver ) return;
+	console.log("showIntroInfo: IN");
 	introInfoGroup.visible = true;
 	finalScoreText.visible = false;
-	game.time.events.add(Phaser.Timer.SECOND * 10, hideIntroInfo, this);
+	hideIntroInfoTimer = game.time.events.add(Phaser.Timer.SECOND * 60, hideIntroInfo, this);
 }
 
 function hideIntroInfo() {
 	if ( !gameOver ) return;
+	console.log("hideIntroInfo: IN");
+	if ( hideIntroInfoTimer ) {
+		game.time.events.remove(hideIntroInfoTimer);
+		hideIntroInfoTimer = false;
+	}
 	introInfoGroup.visible = false;
-	gameOverlayText.visible = true;
-	game.time.events.add(Phaser.Timer.SECOND * 10, showIntroInfo, this);
+	gameOverlayTextGroup.visible = true;
+	//game.time.events.add(Phaser.Timer.SECOND * 10, showIntroInfo, this);
+}
+
+function isShowingIntroInfo() {
+	return introInfoGroup.visible;
 }
 
 function restartGame() {
@@ -926,7 +955,7 @@ function restartGame() {
 	scrambleAllObjects();
 
 	introInfoGroup.visible = false;
-	gameOverlayText.visible = false;
+	gameOverlayTextGroup.visible = false;
 
 	finalScoreText.visible = false;
 	finalScoreText.y = -500;
@@ -1107,8 +1136,15 @@ function clickListener() {
 	console.log("\n\nclickListener: IN***");
 
 	if (gameOver) {
-		// clicking anywhere on the surface will start the game
-		fireButtonPressed();
+		if ( isShowingIntroInfo() ) {
+			hideIntroInfo();
+		} else {
+			// clicking anywhere (above the help button) on the surface will start the game
+			if (game.input.y < game.world.height-100) {
+						fireButtonPressed();
+			}
+		}
+		
 	}
 
 	// console.log("clickListener: input.x="+game.input.x+", input.y="+game.input.y);

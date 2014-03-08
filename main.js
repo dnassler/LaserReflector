@@ -76,7 +76,7 @@ var cursors;
 var clickedOnSprite;
 
 var laserFiring = false;
-var saveShooterVelocityX, saveShooterVelocityY;
+var saveShooterVelocityX=0, saveShooterVelocityY=0;
 
 var laserTimerEvent; // used to make the laser flash
 var prizeHitEvent;
@@ -1286,28 +1286,37 @@ function isShapeOnPath2( shape, d, x0, y0 ) {
 	return isPrizeOrShapeOnLine( shape, shapeWidth, d, x0, y0, line.x1, line.y1 );
 }
 function isPrizeOnLine( prize, d, x0, y0, x1, y1 ) {
-	return isPrizeOrShapeOnLine( prize, prizeWidth, d, x0, y0, x1, y1 );
+	return isPrizeOrShapeOnLine( prize, prizeWidth, d, x0, y0, x1, y1, true );
 }
 
-function isPrizeOrShapeOnLine( obj, sw, d, x0, y0, x1, y1 ) {
+function isPrizeOrShapeOnLine( obj, sw, d, x0, y0, x1, y1, isPrizeSearch ) {
 	//console.log("isPrizeOrShapeOnLine: obj.x="+obj.x+", y="+obj.y+", d.isUp|d.isDown="+(d.isUp|d.isDown)+", x0="+x0+", y0="+y0+", x1="+x1+",y1="+y1);
 	//var dx, dy;
+	if ( debug==1 ) 
+		console.log("isPrizeOrShapeOnLine: "
+			+ "obj.name="+obj.name+", obj.x="+obj.x+", obj.y="+obj.y
+			+ ", sw="+sw
+			+ ", d="+stringForDir(d)
+			+ ", x0="+x0+", y0="+y0+", x1="+x1+", y1="+y1
+			+ ", isPrizeSearch="+isPrizeSearch);
+	
 	if ( Math.abs(obj.x-x0) < sw/2 && Math.abs(obj.y-y0) < sw/2 ) {
 		// ignore this "obj" because we are starting our line from within it!
+		if ( debug==1 ) console.log("isPrizeOrShapeOnLine: ignore obj");
 		return false; 
 	}
 	var laserX = x0;
 	var laserY = y0;
 	var threshold = laserWidth/2 + sw/2;
 	if ( d.isUp || d.isDown ) {
-		if ( isBetween( obj.y, y0, y1 ) ) {
+		if ( isBetween( obj.y, y0, y1, threshold) ) {
 			if ( Math.abs(obj.x - laserX) < threshold ) {
 				//console.log("isPrizeOrShapeOnLine: FOUND PRIZE/SHAPE !!! dx="+Math.abs(obj.x - laserX)+", laserX="+laserX+", obj.x="+obj.x+", obj.y="+obj.y+" is between y0="+y0+", y1="+y1);
 				return true;
 			}
 		}
 	} else {
-		if ( isBetween(obj.x, x0, x1) ) {
+		if ( isBetween(obj.x, x0, x1, threshold) ) {
 			if ( Math.abs(obj.y - laserY) < threshold ) {
 				//console.log("isPrizeOrShapeOnLine: FOUND PRIZE/SHAPE!!! dy="+Math.abs(obj.y - laserY)+", laserY="+laserY+", obj.y="+obj.x+", obj.x="+obj.x+" is between x0="+x0+", x1="+x1);
 				return true;
@@ -1316,8 +1325,10 @@ function isPrizeOrShapeOnLine( obj, sw, d, x0, y0, x1, y1 ) {
 	}
 	return false;
 }
-function isBetween( x, a, b ) {
-	return (a < x && x < b) || (a > x && x > b);
+
+// is x between a and b or near to b within threshold
+function isBetween( x, a, b, threshold ) {
+	return ((a-threshold) < x && x < (b+threshold)) || ((a+threshold) > x && x > (b-threshold));
 }
 
 function lineFromDirectionAndXY( direction, x, y ) {
@@ -1352,14 +1363,14 @@ function calcHitPoint( direction, spriteCollide, x0, y0 ) {
 	// default the laser reflection direction to be "no direction" (i.e. not reflected)
 	r.laserReflectionDirection = {isUp:false,isDown:false,isLeft:false,isRight:false};
 	var triangleHitDiagonalInfo;
-	console.log("calcHitPoint: in");
+	if (debug==1) console.log("calcHitPoint: in");
 	if ( isShapeTriangle(spriteCollide) ) {
-		console.log("calcHitPoint: triangle");
+		if (debug==1) console.log("calcHitPoint: triangle");
 		triangleHitDiagonalInfo = hitTriangleDiagonal(direction,x0,y0,spriteCollide);
-		console.log("calcHitPoint: triangleHitDiagonalInfo.hitDiagonal="+triangleHitDiagonalInfo.hitDiagonal);
+		if (debug==1) console.log("calcHitPoint: triangleHitDiagonalInfo.hitDiagonal="+triangleHitDiagonalInfo.hitDiagonal);
 	}
 	if ( isShapeTriangle(spriteCollide) && triangleHitDiagonalInfo.hitDiagonal ) {
-		console.log("calcHitPoint: hitDiagonal***");
+		if (debug==1) console.log("calcHitPoint: hitDiagonal***");
 		r.isLastSegment = false;
 		r.laserReflectionDirection = triangleHitDiagonalInfo.laserReflectionDirection;
 		// determine the intersection point
@@ -1367,7 +1378,7 @@ function calcHitPoint( direction, spriteCollide, x0, y0 ) {
 		// r.reflectingLineInfo
 		r.x1 = triangleHitDiagonalInfo.hitPointXY.x;
 		r.y1 = triangleHitDiagonalInfo.hitPointXY.y;
-		console.log("calcHitPoint: triangle, diagonal, hitPointXY="+r.x1+"/"+r.y1);
+		if (debug==1) console.log("calcHitPoint: triangle, diagonal, hitPointXY="+r.x1+"/"+r.y1);
 
 	} else {
 		// hit is on "flat" surface (i.e. box or non-diagonal triangle)
@@ -1391,7 +1402,7 @@ function calcHitPoint( direction, spriteCollide, x0, y0 ) {
 			//var currentFrame = spriteCollide.animations.getAnimation('safeMode').frame;
 			var currentFrame = spriteCollide.frame;
 			var animation = spriteCollide.animations.getAnimation('safeMode');
-			console.log("!!!!!!!******** boxReflector1 isPlaying="+animation.isPlaying+", frame="+currentFrame);//<<<<1 !!!!!!! not working !!!!!!!
+			if (debug==1) console.log("!!!!!!!******** boxReflector1 isPlaying="+animation.isPlaying+", frame="+currentFrame);
 			if ( currentFrame == 0 && !animation.isPlaying ) {
 				r.isReflectingBack = true;
 				spriteCollide.play('flashRed');
@@ -1668,6 +1679,12 @@ function reorientShooterAsNecessary() {
 	var changed = false;
 	if ( game.time.now > timeMarkerReorient ) {
 		var saveVelocity = Math.abs(shooter1.body.velocity.x + shooter1.body.velocity.y);
+		if ( debug==1 ) console.log("reorientShooterAsNecessary: saveVelocity="+saveVelocity+", velocity.x="+velocity.x+", velocity.y="+velocity.y);
+		if ( saveVelocity == 0 ) {
+			// normally this does not happen however it could if the user fires the laser a just the right moment which stops the shooter
+			if ( debug==1 ) console.log("reorientShooterAsNecessary: do nothing!!!");
+			return;
+		}
 		if ( shooter1.x > rightLimitX && d.isDown ) {
 			changed = true;
 			shooter1.angle = 180;

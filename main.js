@@ -32,6 +32,9 @@ var hideIntroInfoTimer;
 var introInfoGroup;
 var introText;
 
+var gameplayObjectsGroup; // holds whatever should only be visible when playing the game (i.e. the 'fire' button)
+var fireButtonSprite;
+
 var gameOverlayTextGroup; // this holds the text/buttons that overlays the game screen in-between games
 var gameOverlayText; // part of the gameOverlayTextGroup this text will appear over game stage "Game Over", etc.
 var gameHelpButton;
@@ -381,9 +384,13 @@ game_state.main.prototype = {
 		shooter1.anchor.setTo(0.5,0.5);
 		shooter1.visible = false;
 
+
 		fireButtonSprite = game.add.button(game.world.width-100,game.world.height-100, "fireButton", null, this, 0,0,2);
 		fireButtonSprite.onInputDown.add(fireButtonPressed);
 		fireButtonSprite.onInputUp.add(fireButtonReleased);
+		gameplayObjectsGroup = game.add.group();
+		gameplayObjectsGroup.add( fireButtonSprite );
+		gameplayObjectsGroup.visible = false;
 
 		// scale the blocks/triangles/shooter appropriately
 		if ( shapeScale != 1 ) {
@@ -434,7 +441,7 @@ game_state.main.prototype = {
     introInfoGroup.visible = false;
     var blackBg = game.add.graphics(0,0);
     introInfoGroup.add( blackBg );
-    blackBg.beginFill("0x000000");
+    blackBg.beginFill("0x000000", 0.7);
     blackBg.drawRect(0,0,game.width,game.height);
     // now draw a red laser around the perimeter of the game world
     //blackBg.setStrokeStyle(laserWidth);
@@ -483,7 +490,8 @@ game_state.main.prototype = {
     introReflector.anchor.setTo(0.5,0.5);
     introInfoGroup.add( introReflector );
     
-		var introStyle = { font: "20px PressStart2P", fill: "#ff0044", align: "left" };
+		//var introStyle = { font: "20px PressStart2P", fill: "#ff0044", align: "left" };
+		var introStyle = { font: "20px PressStart2P", fill: "#ffffff", align: "left" };
     introText = game.add.bitmapText( 120, game.world.centerY, "",	introStyle );
     introText.anchor.setTo(0,0.5);
     introInfoGroup.add( introText );
@@ -795,11 +803,14 @@ function fireButtonPressed() {
 				.onComplete.add( function () {
 					var point = findEmptyGridLocation();
 					p.wasHit = false;
-					p.scale.setTo(1,1);
+					p.scale.setTo(1,1); // sometimes this is called too early and the scale is reset by the above tween
 					p.x = point.x;
 					p.y = point.y;
 					game.add.tween(p)
-						.to({alpha:1}, 500, Phaser.Easing.Linear.None, true);
+						.to({alpha:1}, 500, Phaser.Easing.Linear.None, true)
+						.onComplete.add( function () {
+							p.scale.setTo(1,1);
+						});
 				}, this);
 		});
 
@@ -917,6 +928,7 @@ function gameLevelTimeout() {
 	
 	game.time.events.add(Phaser.Timer.SECOND*2, function () {
 		gameOverlayTextGroup.visible = true;
+		gameplayObjectsGroup.visible = false;
 	}, this);
 
 	timeMarkerGameOver = game.time.now + 2000;
@@ -928,6 +940,7 @@ function showIntroInfo() {
 	if ( debug==1 ) return;
 	if ( !gameOver ) return;
 	console.log("showIntroInfo: IN");
+	gameOverlayTextGroup.visible = false;
 	introInfoGroup.visible = true;
 	finalScoreText.visible = false;
 	hideIntroInfoTimer = game.time.events.add(Phaser.Timer.SECOND * 60, hideIntroInfo, this);
@@ -940,6 +953,7 @@ function hideIntroInfo() {
 		game.time.events.remove(hideIntroInfoTimer);
 		hideIntroInfoTimer = false;
 	}
+	gameOverlayTextGroup.visible = true;
 	introInfoGroup.visible = false;
 	gameOverlayTextGroup.visible = true;
 	//game.time.events.add(Phaser.Timer.SECOND * 10, showIntroInfo, this);
@@ -956,6 +970,7 @@ function restartGame() {
 
 	introInfoGroup.visible = false;
 	gameOverlayTextGroup.visible = false;
+	gameplayObjectsGroup.visible = true;
 
 	finalScoreText.visible = false;
 	finalScoreText.y = -500;
@@ -1048,7 +1063,8 @@ function laserTimerEventCallback() {
 
 function drawLaserFrom( x0, y0, angle ) {
 	
-	console.log("drawLaserFrom!!!!")
+	if ( debug==1) console.log("\n\n\n\n\n\n-----------------------------------------\ndrawLaserFrom: IN")
+
 	// laserSprite1.width = 1000;
 	// laserSprite1.angle = angle;
 	// laserSprite1.anchor.setTo(0,0);
@@ -1063,8 +1079,7 @@ function drawLaserFrom( x0, y0, angle ) {
 	laserLayerBM1.setStrokeStyle(laserWidth);
 	laserLayerBM1.strokeStyle('#f00');
 	laserLayerBM1.beginPath();
-	console.log("drawing line");
-	
+
 	var lx0,ly0;
 
 	var calcuatedLineSegmentInfo;
@@ -1089,6 +1104,13 @@ function drawLaserFrom( x0, y0, angle ) {
 	
 	while ( !calcuatedLineSegmentInfo || !calcuatedLineSegmentInfo.isLastSegment ) {
 		
+		if ( debug == 1 ) console.log(
+			"drawLaserFrom: in while, "
+			+ "numLaserBounces="+numLaserBounces
+			+ ", laserDirection="+stringForDir(laserDirection)
+			+ ", lx0="+lx0+", ly="+ly0
+			);
+
 		calcuatedLineSegmentInfo = calcLineSegment(laserDirection,lx0,ly0);
 
 		laserLayerBM1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
@@ -1102,34 +1124,39 @@ function drawLaserFrom( x0, y0, angle ) {
 		//console.log("drawLaserFrom: prizeArr.length="+prizeArr.length);
 
 		laserDirection = calcuatedLineSegmentInfo.laserReflectionDirection;
-		if ( debug == 1 ) console.log("drawLaserFrom: calcuatedLineSegmentInfo.laserReflectionDirection="+stringForDir(laserDirection));
+
+		if ( debug == 1 ) console.log(
+			"drawLaserFrom: in while after calcLineSegment, "
+			+ ", laserReflectionDirection="+stringForDir(laserDirection)
+			+ ", calcuatedLineSegmentInfo.x1="+calcuatedLineSegmentInfo.x1+", y1="+calcuatedLineSegmentInfo.y1
+			+ ", isLastSegment="+calcuatedLineSegmentInfo.isLastSegment
+		);
 
 		lx0 = calcuatedLineSegmentInfo.x1;
 		ly0 = calcuatedLineSegmentInfo.y1;
 		if ( !calcuatedLineSegmentInfo.isLastSegment ) {
 			numLaserBounces += 1;
 		}
+
 	}
 
 	//laserLayerBM1.lineTo(x,y);
 	//laserLayerBM1.lineTo(x,y);
-	laserLayerBM1.moveTo(x0,y0);
-	laserLayerBM1.closePath();
+
+	//laserLayerBM1.moveTo(x0,y0);
+	//laserLayerBM1.closePath();
+
 	laserLayerBM1.stroke();
+
 	//laserLayerBM1.fillStyle('#f00');
 	//laserLayerBM1.fill();
 	
 	// not sure if I need to do the below!
-	if (false) laserLayerSprite1.loadTexture(laserLayerBM1);
-	
-
-
+	// if (false) laserLayerSprite1.loadTexture(laserLayerBM1);
 	//1----laserLayerTexture1.render(laserLayerSprite1, {x:0,y:0}, true, true);
 
-	//totalLaserBounces += numLaserBounces;
+	console.log("drawLaserFrom: OUT isReflectingBack="+isReflectingBack);
 
-	console.log("drawLaserFrom: isReflectingBack="+isReflectingBack
-		+", prizeArr.length="+prizeArr.length);
 	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, hitScore:hitScore, prizeArr:prizeArr};
 }
 
@@ -1222,7 +1249,7 @@ function calcLineSegment( direction, x0, y0 ) {
 		// no sprite is in the path
 		// so the end point of the line is just
 		// the limit of the game world
-		console.log("calcLineSegment: spriteCollide!!!");
+		if (debug==1) console.log("calcLineSegment: no sprite collision, so go to edge of the world");
 		var line = lineFromDirectionAndXY( direction, x0, y0);
 		r.x1 = line.x1;
 		r.y1 = line.y1;
@@ -1230,7 +1257,7 @@ function calcLineSegment( direction, x0, y0 ) {
 
 	// collect prizes on the calculated line (return this array with the other results)
 	r.prizeArr = collectPrizesOnLine( direction, r.x0, r.y0, r.x1, r.y1 );
-	console.log("calcLineSegment: r.prizeArr.lenth="+r.prizeArr.length);
+	if (debug==1) console.log("calcLineSegment: r.prizeArr.lenth="+r.prizeArr.length);
 	return r;
 }
 

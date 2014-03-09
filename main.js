@@ -17,6 +17,8 @@ var debug=0;
 
 // define globals here
 
+var nextUniqueShapeId = 0;
+
 var gridSize = 100;
 var halfGridSize = gridSize/2;
 
@@ -28,6 +30,7 @@ var prizeWidth = 34;
 var numBlocksVertical;
 var numBlocksHorizontal;
 
+var gameLevelTimerEvent;
 var hideIntroInfoTimer;
 var introInfoGroup;
 var introText;
@@ -305,7 +308,6 @@ game_state.main.prototype = {
 				r.frame=0;
 			}, r);
 			r.frame = 0;
-			console.log("r.")
 			boxReflectorArr.push( r );
 			allGridObjectsArr.push( r );
 		}
@@ -688,6 +690,7 @@ function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
 	console.log("createGameElement: pointEmpty.x="+pointEmpty.x+", pointEmpty.y="+pointEmpty.y);
 
 	var shape = game.add.sprite( rx, ry, shapeName, frameNum );
+	shape.shapeId = nextUniqueShapeId++;
 	shape.anchor.setTo(0.5,0.5);
 	// if ( shapeName === "triangleReflector1" ) {
 	// 	shape.body.setPolygon( 0,0, 100,100, 0,100 );
@@ -718,8 +721,24 @@ function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
 }
 
 function fixSnapLocationReflector( reflectorSprite ) {
-	reflectorSprite.x = Phaser.Math.snapToFloor( reflectorSprite.x, gridSize ) + halfGridSize;
-	reflectorSprite.y = Phaser.Math.snapToFloor( reflectorSprite.y, gridSize ) + halfGridSize;
+	
+	var toX = Phaser.Math.snapToFloor( reflectorSprite.x, gridSize ) + halfGridSize;
+	var toY = Phaser.Math.snapToFloor( reflectorSprite.y, gridSize ) + halfGridSize;
+
+	// check if the snapped to spot is ok to drop to (i.e. there is no existing sprite there that is not itself)
+	console.log("\n\n\nfixSnapLocationReflector: IN reflectorSprite.shapeId="+reflectorSprite.shapeId+", toX="+toX+", toY="+toY);
+	var shapeAtXY = hasShapeAtXY(toX,toY);
+	if ( shapeAtXY ) console.log("fixSnapLocationReflector: hasShapeAtXY(toX,toY)="+shapeAtXY.shapeId);
+	
+	var freeLocation;
+	if ( !shapeAtXY || shapeAtXY.shapeId == reflectorSprite.shapeId) {
+		freeLocation = {x:toX,y:toY};
+	} else {
+		freeLocation = tryGetNearbyLocation( toX, toY );
+	}
+
+	reflectorSprite.x = freeLocation.x;
+	reflectorSprite.y = freeLocation.y;
 }
 
 function fireButtonPressed() {
@@ -916,7 +935,10 @@ function shooterDies() {
 function gameLevelTimeout() {
 	gameOver = true;
 	shooterDead = true; // shooter is considered "dead" unless it is alive
-	game.time.events.remove(gameLevelTimerEvent);
+	if ( gameLevelTimerEvent ) {
+			game.time.events.remove(gameLevelTimerEvent);
+			gameLevelTimerEvent = null;
+	}
 	shooter1.visible = false;
 
 	console.log("************** GAME OVER *****************");
@@ -1002,6 +1024,9 @@ function restartGame() {
 
 		gameStartingText.visible = false;
 		restartLevel();
+		if ( gameLevelTimerEvent ) {
+				game.time.events.remove(gameLevelTimerEvent);
+		}
 		gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
 		timeMarkerMoveBlueSquares = game.time.now + 1000;
 		timeMarkerMovePrizes = game.time.now + 2000;
@@ -1820,28 +1845,47 @@ function hasShapeAt(xy) {
 	return false;
 }
 
-// this function mischeiviously changes the locations of some or all of the deadly blue squares
-function updateObjectPositions( objectsToMoveArr ) {
-	if ( debug==1 ) return;
-	// boxReflectorArr.forEach(function () {		
-	// });
-	console.log("updateBlueSquarePositions: IN");
-	var b;
-	var adjacentSpots;
-	var limitSearchCount = 10;
-	while ( true ) {
-		b = Phaser.Math.getRandom( objectsToMoveArr );
-		adjacentSpots = getFreeAdjacentLocations(b.x,b.y);
-		if ( adjacentSpots.length > 0 ) break;
-		if ( limitSearchCount <= 0 ) return;
-		limitSearchCount -= 1;
-	}
+function shapeCountAtLocation( x, y ) {
+	var shapes = findShapesAt( x, y );
+	return shapes.length;
+}
+
+// return all shapes at the specified location
+function findShapesAt( x, y ) {
+	var shapesAtLocation = [];
+	allGridObjectsArr.forEach(
+		function( shape ) {
+			if ( shape.alive && x == shape.x && y == shape.y ) {
+				shapesAtLocation.push( shape );
+			}
+		}
+	);
+	return shapesAtLocation;
+}
+
+function updateSingleObjectPosition( b ) {
+
+	var adjacentSpots = getFreeAdjacentLocations(b.x,b.y);
+	if ( adjacentSpots.length == 0 ) return;
 
 	var newLocationPoint = Phaser.Math.getRandom( adjacentSpots );
 	//console.log("updateBlueSquarePositions: moving blue box from x="+b.x+", y="+b.y+" to x="+newLocationPoint.x+", y="+newLocationPoint.y);
 
 	//game.physics.moveToXY( b, newLocationPoint.x, newLocationPoint.y, 100 );
-	game.add.tween(b).to({x:newLocationPoint.x, y:newLocationPoint.y}, 500, Phaser.Easing.Back.Out, true);
+	game.add.tween(b).to({x:newLocationPoint.x, y:newLocationPoint.y}, 500, Phaser.Easing.Back.Out, true)
+		.onComplete.add(function() {
+				// check that the location moved to doesn't have more than one occupant (i.e. this could occur if another 
+				// object moved there within the last 500ms). Count the number of objects at the new location and if there 
+				// is more than one then move this piece again.
+				console.log("updateSingleObjectPosition: completed move, checking if need to move again");
+				var count = shapeCountAtLocation( newLocationPoint.x, newLocationPoint.y );
+				if ( count > 1 ) {
+					console.log("updateSingleObjectPosition: moving shape again");
+					updateSingleObjectPosition( b );
+				} else {
+					console.log("updateSingleObjectPosition: did not need to move again")
+				}
+			}, this);
 	if ( isShapeTriangle(b) ) {
 		audioSlidingTriangle.play();
 		rotateTriangleReflector( b, true );
@@ -1851,10 +1895,30 @@ function updateObjectPositions( objectsToMoveArr ) {
 		audioSliding.play();
 	}
 
-	//game.add.tween(p).to({ x: 700 }, 1000, Phaser.Easing.Linear.None, true) .to({ y: 300 }, 1000, Phaser.Easing.Linear.None) .to({ x: 0 }, 1000, Phaser.Easing.Linear.None) .to({ y: 0 }, 1000, Phaser.Easing.Linear.None) .loop();
+}
 
-	//b.x = newLocationPoint.x;
-	//b.y = newLocationPoint.y;
+// this function mischeiviously changes the locations of some or all of the deadly blue squares
+function updateObjectPositions( objectsToMoveArr ) {
+	if ( debug==1 ) return;
+	var b = Phaser.Math.getRandom( objectsToMoveArr );
+	updateSingleObjectPosition( b );
+}
+
+function tryGetNearbyLocation( x, y ) {
+	var freeLocation;
+
+	var adjacentSpots = getFreeAdjacentLocations( x, y );
+	if ( adjacentSpots.length > 0 ) {
+		return Phaser.Math.getRandom( adjacentSpots );
+	}
+
+	adjacentSpots = getFreeAdjacentDiagonalLocations( x, y );
+	if ( adjacentSpots.length > 0 ) {
+		return Phaser.Math.getRandom( adjacentSpots );
+	}
+	
+	// nothing at or adjacent so pick a random location
+	return findEmptyGridLocation();
 }
 
 function getFreeAdjacentLocations( x, y ) {
@@ -1863,6 +1927,24 @@ function getFreeAdjacentLocations( x, y ) {
 	if ( x+gridSize <= rightLimitX-gridSize && !hasShapeAtXY(x+gridSize,y) ) locationPoints.push({x:x+gridSize,y:y});
 	if ( y-gridSize >= topLimitY+gridSize && !hasShapeAtXY(x,y-gridSize) ) locationPoints.push({x:x,y:y-gridSize});
 	if ( y+gridSize <= bottomLimitY-gridSize && !hasShapeAtXY(x,y+gridSize) ) locationPoints.push({x:x,y:y+gridSize});
+
+	return locationPoints;
+}
+
+function getFreeAdjacentDiagonalLocations( x, y ) {
+	var locationPoints = [];
+	if ( x-gridSize >= leftLimitX+gridSize && y-gridSize >= topLimitY+gridSize && !hasShapeAtXY(x-gridSize,y-gridSize) ) {
+		locationPoints.push({x:x-gridSize,y:y-gridSize});
+	}
+	if ( x+gridSize <= rightLimitX-gridSize && y+gridSize <= bottomLimitY-gridSize && !hasShapeAtXY(x+gridSize,y+gridSize) ) {
+		locationPoints.push({x:x+gridSize,y:y+gridSize});
+	}
+	if ( x-gridSize >= leftLimitX+gridSize && y+gridSize <= bottomLimitY-gridSize && !hasShapeAtXY(x-gridSize,y+gridSize) ) {
+		locationPoints.push({x:x-gridSize,y:y+gridSize});
+	}
+	if ( x+gridSize <= rightLimitX-gridSize && y-gridSize >= topLimitY+gridSize && !hasShapeAtXY(x+gridSize,y-gridSize) ) {
+		locationPoints.push({x:x+gridSize,y:y-gridSize});
+	}
 	return locationPoints;
 }
 

@@ -170,7 +170,7 @@ game_state.main.prototype = {
 
 		game.load.image('greenBox', "assets/greenBox.png");
 
-		game.load.spritesheet('fireButton', 'assets/buttons/FireButton3Frames.png',100,100);
+		game.load.spritesheet('fireButton', 'assets/buttons/FireButton2Frames.png',200,200);
 		game.load.spritesheet('helpButton', 'assets/buttons/HelpButtonFrames.png',100,100);
 
 		// ==
@@ -382,14 +382,14 @@ game_state.main.prototype = {
 		laserLayerSprite1 = game.add.sprite(0,0,laserLayerBM1);
 		laserLayerSprite1.visible = false;
 
+		fireButtonSprite = game.add.button(game.world.width-200,game.world.height-200, "fireButton", null, this, 0,0,1);
+		fireButtonSprite.onInputDown.add(fireButtonPressed);
+		fireButtonSprite.onInputUp.add(fireButtonReleased);
+
 		shooter1 = game.add.sprite(game.world.centerX, halfGridSize, "shooter1");
 		shooter1.anchor.setTo(0.5,0.5);
 		shooter1.visible = false;
 
-
-		fireButtonSprite = game.add.button(game.world.width-100,game.world.height-100, "fireButton", null, this, 0,0,2);
-		fireButtonSprite.onInputDown.add(fireButtonPressed);
-		fireButtonSprite.onInputUp.add(fireButtonReleased);
 		gameplayObjectsGroup = game.add.group();
 		gameplayObjectsGroup.add( fireButtonSprite );
 		gameplayObjectsGroup.visible = false;

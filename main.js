@@ -177,7 +177,7 @@ game_state.main.prototype = {
 		// sounds...
 
 		//  Firefox doesn't support mp3 files, so use ogg
-		game.load.audio('bgGrumble', 'assets/audio/SC_140301_123920.mp3');
+		//game.load.audio('bgGrumble', 'assets/audio/SC_140301_123920.mp3');
 		game.load.audio('sliding','assets/audio/sliding1.mp3');
 		game.load.audio('slidingPrize','assets/audio/sliding2.mp3');
 		game.load.audio('slidingTriangle','assets/audio/sliding3.mp3');
@@ -221,10 +221,10 @@ game_state.main.prototype = {
 
 		// sound
 
-		audioBackground = game.add.audio('bgGrumble',1,true);
-		if ( debug != 1 ) {
-		  audioBackground.play('',0,1,true);
-		}
+		// audioBackground = game.add.audio('bgGrumble',1,true);
+		// if ( debug != 1 ) {
+		//   audioBackground.play('',0,1,true);
+		// }
 		audioSliding = game.add.audio('sliding',0.25,true);
 		audioSlidingPrize = game.add.audio('slidingPrize',0.1,true);
 		audioSlidingTriangle = game.add.audio('slidingTriangle',0.25,true);
@@ -623,10 +623,10 @@ game_state.main.prototype = {
 }
 
 function gamePaused() {
-	audioBackground.pause();
+	//audioBackground.pause();
 }
 function gameResumed() {
-	audioBackground.resume();
+	//audioBackground.resume();
 }
 
 function helpButtonCallback() {

@@ -634,9 +634,9 @@ game_state.main.prototype = {
 
 		//game.debug.renderSpriteInfo(shooter1,10,600);
 		
-    game.debug.renderText("w="+w+", h="+h+", window.devicePixelRatio="+window.devicePixelRatio,10,10);
-    game.debug.renderText("game.width="+game.width+", game.height="+game.height,10,50);
-    game.debug.renderText("screen.width="+screen.width+", screen.height="+screen.height,10,100);
+    // game.debug.renderText("w="+w+", h="+h+", window.devicePixelRatio="+window.devicePixelRatio,10,10);
+    // game.debug.renderText("game.width="+game.width+", game.height="+game.height,10,50);
+    // game.debug.renderText("screen.width="+screen.width+", screen.height="+screen.height,10,100);
 
 	}
 

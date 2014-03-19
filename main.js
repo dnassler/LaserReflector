@@ -236,8 +236,14 @@ game_state.main.prototype = {
 		game.stage.scale.pageAlignVeritcally = true;
 		game.stage.scale.refresh();
 
-		numBlocksVertical = Math.floor(game.world.height/gridSize) - 2;
-		numBlocksHorizontal = Math.floor(game.world.width/gridSize) -3;
+		numBlocksVertical = Math.floor(SAFE_ZONE_HEIGHT/gridSize) - 2;
+		numBlocksHorizontal = Math.floor(SAFE_ZONE_WIDTH/gridSize) -3;
+
+		// --
+		rightLimitX = SAFE_ZONE_WIDTH + extraWidth/2 - halfGridSize - gridSize;
+		topLimitY = halfGridSize + extraHeight/2;
+		bottomLimitY = SAFE_ZONE_HEIGHT + extraHeight/2 - halfGridSize;
+		leftLimitX = extraWidth/2 + halfGridSize;
 
 		// sound
 
@@ -311,7 +317,7 @@ game_state.main.prototype = {
 
 		reflectorGroup1 = game.add.group();
 		triangleGroupArr = [];
-		for (var i=0; i<10; i++) {
+		for (var i=0; i<15; i++) {
 			var r = reflectorGroup1.add( createGameElement("triangleReflector1", true, true) );
 			triangleGroupArr.push( r );
 			allGridObjectsArr.push( r );
@@ -331,7 +337,7 @@ game_state.main.prototype = {
 			boxReflectorArr.push( r );
 			allGridObjectsArr.push( r );
 		}
-		for (var i=0; i<5; i++) {
+		for (var i=0; i<0; i++) {
 			var r = reflectorGroup1.add( createGameElement("blocker1") );
 			allGridObjectsArr.push( r );
 		}
@@ -421,12 +427,6 @@ game_state.main.prototype = {
 			});
 			shooter1.scale.setTo( shapeScale, shapeScale );
 		}
-
-		// --
-		rightLimitX = game.world.width - shooter1.width/2 - shooter1.width; //<<<<1
-		topLimitY = shooter1.height / 2;
-		bottomLimitY = game.world.height - shooter1.height/2;
-		leftLimitX = shooter1.width/2;
 
 		// --
 		var style = { font: "50px PressStart2P", fill: "#ff0044", align: "center" };
@@ -742,8 +742,11 @@ function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
 
 function fixSnapLocationReflector( reflectorSprite ) {
 	
-	var toX = Phaser.Math.snapToFloor( reflectorSprite.x, gridSize ) + halfGridSize;
-	var toY = Phaser.Math.snapToFloor( reflectorSprite.y, gridSize ) + halfGridSize;
+	var toXY = snapToShapeGrid( {x:reflectorSprite.x, y:reflectorSprite.y} );
+	var toX = toXY.x;
+	var toY = toXY.y;
+	// var toX = Phaser.Math.snapToFloor( reflectorSprite.x, gridSize ) + halfGridSize + extraWidth/2;
+	// var toY = Phaser.Math.snapToFloor( reflectorSprite.y, gridSize ) + halfGridSize + extraHeight/2;
 
 	// check if the snapped to spot is ok to drop to (i.e. there is no existing sprite there that is not itself)
 	console.log("\n\n\nfixSnapLocationReflector: IN reflectorSprite.shapeId="+reflectorSprite.shapeId+", toX="+toX+", toY="+toY);
@@ -769,7 +772,7 @@ function fireButtonPressed() {
 	// we need to do a few checks to decide if we need to restart the game 
 	// or to shoot the laser.
 	if ( !gameOver && shooterDead ) {
-		console.log("fireButtonPressed: ignoring because the shooter is dead")
+		console.log("fireButtonPressed: ignoring because the shooter is dead");
 		return;
 	}
 	if ( gameOver || shooterDead ) {
@@ -1840,7 +1843,10 @@ function reorientShooterAsNecessary() {
 }
 
 function snapToShapeGrid( xy ) {
-	return {x:Phaser.Math.snapToFloor(xy.x,gridSize)+halfGridSize, y:Phaser.Math.snapToFloor(xy.y,gridSize)+halfGridSize};
+	return {
+		x:Phaser.Math.snapToFloor(xy.x - extraWidth/2, gridSize)+halfGridSize+ extraWidth/2, 
+		y:Phaser.Math.snapToFloor(xy.y - extraHeight/2, gridSize)+halfGridSize+ extraHeight/2
+	};
 }
 
 function hasShapeAtXY( x, y ) {
@@ -1972,8 +1978,8 @@ function findEmptyGridLocation() {
 	var rx, ry;
 	var hasShapeAtRxRy;
 	while (hasShapeAtRxRy || rx == null ) {
-		rx = (Math.floor(Math.random() * numBlocksHorizontal)+1) * gridSize + halfGridSize;
-		ry = (Math.floor(Math.random() * numBlocksVertical)+1) * gridSize + halfGridSize;
+		rx = (Math.floor(Math.random() * numBlocksHorizontal)+1) * gridSize + leftLimitX;
+		ry = (Math.floor(Math.random() * numBlocksVertical)+1) * gridSize + topLimitY;
 		hasShapeAtRxRy = hasShapeAt({x:rx,y:ry});
 		//if (hasShapeAtRxRy) console.log("hasShapeAtRxRy=true, getting another rx/ry");
 	}

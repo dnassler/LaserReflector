@@ -452,11 +452,11 @@ game_state.main.prototype = {
     gameStartingText = game.add.bitmapText( game.world.centerX, game.world.centerY, "", style );
     gameStartingText.anchor.setTo(0.5,0.5);
 
-    scoreText = game.add.bitmapText(game.world.width-10, 10, "", style);
+    scoreText = game.add.bitmapText(game.world.width-10, 50, "", style);
     scoreText.anchor.setTo(1,0);
-    healthText = game.add.bitmapText(game.world.width-10, 110, "", style);
+    healthText = game.add.bitmapText(game.world.width-10, 150, "", style);
     healthText.anchor.setTo(1,0);
-    timerText = game.add.bitmapText(game.world.width-10, 210, "", style);
+    timerText = game.add.bitmapText(game.world.width-10, 250, "", style);
     timerText.anchor.setTo(1,0);
 
     introInfoGroup = game.add.group();

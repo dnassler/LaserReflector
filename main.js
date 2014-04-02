@@ -165,8 +165,8 @@ var resizeGame = function () {
   // game.stage.scale.pageAlignHorizontally = true;
   // game.stage.scale.pageAlignVeritcally = true;
   // game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL; //resize your window to see the stage resize too
-	game.stage.scale.setShowAll();
-	game.stage.scale.refresh();
+	game.scale.setShowAll();
+	game.scale.refresh();
 
 }
 
@@ -214,6 +214,8 @@ game_state.main.prototype = {
 
 	create: function() {
 
+		game.physics.startSystem(Phaser.Physics.ARCADE);
+
 		gameOver = true;
 
 		this.game.onPause.add(gamePaused, this);
@@ -229,12 +231,13 @@ game_state.main.prototype = {
 
 		// ==
 
-		game.stage.fullScreenScaleMode = Phaser.StageScaleMode.SHOW_ALL;
+		game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
+		game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 		//game.stage.scaleMode = Phaser.StageScaleMode.SHOW_ALL;
-		game.stage.scale.setShowAll();
-		game.stage.scale.pageAlignHorizontally = true;
-		game.stage.scale.pageAlignVeritcally = true;
-		game.stage.scale.refresh();
+		game.scale.setShowAll();
+		game.scale.pageAlignHorizontally = true;
+		game.scale.pageAlignVeritcally = true;
+		game.scale.refresh();
 
 		numBlocksVertical = Math.floor(SAFE_ZONE_HEIGHT/gridSize) - 2;
 		numBlocksHorizontal = Math.floor(SAFE_ZONE_WIDTH/gridSize) -3;
@@ -251,16 +254,16 @@ game_state.main.prototype = {
 		// if ( debug != 1 ) {
 		//   audioBackground.play('',0,1,true);
 		// }
-		audioSliding = game.add.audio('sliding',0.25,true);
-		audioSlidingPrize = game.add.audio('slidingPrize',0.1,true);
-		audioSlidingTriangle = game.add.audio('slidingTriangle',0.25,true);
+		audioSliding = game.add.audio('sliding',0.25,false);
+		audioSlidingPrize = game.add.audio('slidingPrize',0.1,false);
+		audioSlidingTriangle = game.add.audio('slidingTriangle',0.25,false);
 
-		audioLaserFired = game.add.audio('laserFired',0.75,true);
-		audioShooterDies = game.add.audio('shooterDies',0.3,true);
-		audioPrizeHit = game.add.audio('prizeHit',0.75,true);
+		audioLaserFired = game.add.audio('laserFired',0.75,false);
+		audioShooterDies = game.add.audio('shooterDies',0.3,false);
+		audioPrizeHit = game.add.audio('prizeHit',0.75,false);
 
-		audioGameStart = game.add.audio('gameStart',0.75,true);
-		audioGameOver = game.add.audio('gameOver',0.75,true);
+		audioGameStart = game.add.audio('gameStart',0.75,false);
+		audioGameOver = game.add.audio('gameOver',0.75,false);
 
 		// ==
 
@@ -278,19 +281,29 @@ game_state.main.prototype = {
 
     bgDecorationGroup1 = game.add.group();
     for (var i=0; i<10; i++) {
-    	var x = Math.random()*game.world.width - 100;
-    	var y = Math.random()*game.world.height;
+    	// var x = Math.random()*game.world.width - 100;
+    	// var y = Math.random()*game.world.height;
+    	var x = game.world.randomX;
+    	var y = game.world.randomY;
+
+    	console.log("bgDecorationGroup1: x=",x,", y=",y);
     	var shapeName = Phaser.Math.getRandom( shapeNameArr );
     	var s = game.add.sprite(x,y,shapeName);
+    	game.physics.enable(s, Phaser.Physics.ARCADE);
+    	//s.checkWorldBounds = true;
     	s.anchor.setTo(0.5,0.5);
     	if ( shapeName == "triangleReflector1" ) {
     		s.angle = Math.floor(Math.random()*4)*90;
     	}
     	var rscale = Math.random()*2 + 1;
     	s.scale.setTo(rscale,rscale);
-    	s.body.velocity.x = (20 * rscale/2.0);
+    	
+			s.body.velocity.x = (20 * rscale/2.0);
     	s.body.velocity.y = (40 * rscale/2.0);
+    	//s.x = x;
+    	//x.y = y;
     	//s.body.angularVelocity = 10 - Math.random()*10*rscale/10;
+
     	s.events.onOutOfBounds.add( function (bgShape) {
     		// bgShape.reset(-500,-500);
     		// var rscale = Math.random()*10 + 1;
@@ -302,6 +315,7 @@ game_state.main.prototype = {
     		bgShape.body.velocity.x = 20 * bgShapeScale/2.0;
     		bgShape.body.velocity.y = 40 * bgShapeScale/2.0;
     	});
+
     	bgDecorationGroup1.add( s );
     }
     bgDecorationGroup1.alpha = 0.1;
@@ -408,11 +422,12 @@ game_state.main.prototype = {
 		laserLayerSprite1 = game.add.sprite(0,0,laserLayerBM1);
 		laserLayerSprite1.visible = false;
 
-		fireButtonSprite = game.add.button(game.world.width-200,game.world.height-200, "fireButton", null, this, 0,0,1);
+		fireButtonSprite = game.add.button(game.world.width-200,game.world.height-200, "fireButton", null, this, 0,0,1,0);
 		fireButtonSprite.onInputDown.add(fireButtonPressed);
 		fireButtonSprite.onInputUp.add(fireButtonReleased);
 
 		shooter1 = game.add.sprite(game.world.centerX, halfGridSize, "shooter1");
+		game.physics.enable(shooter1, Phaser.Physics.ARCADE);
 		shooter1.anchor.setTo(0.5,0.5);
 		shooter1.visible = false;
 
@@ -438,26 +453,31 @@ game_state.main.prototype = {
     finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#258acc", align: "center" });
 		// finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px Arial", fill: "#ffffff", align: "center", stroke: "#258acc", strokeThickness: 8 });
     // finalScoreText = game.add.text( game.world.centerX, -500, "", { font: "600px 'Press Start 2P'", fill: "#ff0044", align: "center", stroke: "#FFFFFF", strokeThickness: 8 });
-    finalScoreText.anchor.setTo(0.5,0.5);
+    finalScoreText.anchor.set(0.5,0.5);
+    finalScoreText.align = "center";
     finalScoreText.visible = false;
 
     // the gameOverlayTextGroup holds the in-between games/game-over text and help button
     gameOverlayTextGroup = game.add.group();
-    gameOverlayText = game.add.bitmapText( game.world.centerX, 200, "", style );
-    gameOverlayText.anchor.setTo(0.5,0);
+    gameOverlayText = game.add.bitmapText( game.world.centerX, 200, "pressStart2P", "", 50 );
+    //gameOverlayText.anchor.set(0.5,0);
+    gameOverlayText.align = "center";
     gameOverlayTextGroup.add( gameOverlayText );
     gameHelpButton = game.add.button(game.world.width-100,game.world.height-100, "helpButton", null, this, 0,0,2,0, gameOverlayTextGroup);
     gameHelpButton.onInputDown.add( helpButtonCallback );
 
-    gameStartingText = game.add.bitmapText( game.world.centerX, game.world.centerY, "", style );
-    gameStartingText.anchor.setTo(0.5,0.5);
-
-    scoreText = game.add.bitmapText(game.world.width-10, 50, "", style);
-    scoreText.anchor.setTo(1,0);
-    healthText = game.add.bitmapText(game.world.width-10, 150, "", style);
-    healthText.anchor.setTo(1,0);
-    timerText = game.add.bitmapText(game.world.width-10, 250, "", style);
-    timerText.anchor.setTo(1,0);
+    gameStartingText = game.add.bitmapText( game.world.centerX, game.world.centerY, "pressStart2P", "", 50 );
+    //gameStartingText.anchor.setTo(0.5,0.5);
+		gameStartingText.align = "center";
+    scoreText = game.add.bitmapText(game.world.width-10, 50, "pressStart2P", "", 50);
+    //scoreText.anchor.setTo(1,0);
+    scoreText.align = "right";
+    healthText = game.add.bitmapText(game.world.width-10, 150, "pressStart2P", "", 50);
+    //healthText.anchor.setTo(1,0);
+    healthText.align = "right";
+    timerText = game.add.bitmapText(game.world.width-10, 250, "pressStart2P", "", 50);
+    //timerText.anchor.setTo(1,0);
+    timerText.align = "right";
 
     introInfoGroup = game.add.group();
     introInfoGroup.visible = false;
@@ -514,12 +534,14 @@ game_state.main.prototype = {
     
 		//var introStyle = { font: "20px PressStart2P", fill: "#ff0044", align: "left" };
 		var introStyle = { font: "20px PressStart2P", fill: "#ffffff", align: "left" };
-    introText = game.add.bitmapText( 120, game.world.centerY, "",	introStyle );
-    introText.anchor.setTo(0,0.5);
+    introText = game.add.bitmapText( game.world.centerX, game.world.centerY, "pressStart2P", "",	20 );
+    //introText.anchor.setTo(0,0.5);
+    introText.align = "left";
     introInfoGroup.add( introText );
 
     game.time.events.add(Phaser.Timer.SECOND*2, function () {
-    	introText.setText(
+    	//introText.setText(
+    	setTextCenter( introText,
     		"Welcome to LAZOR REFLEKTOR!!!\n"
     		+ "\n"
     		+ "The object of the game is to fire your laser\n"
@@ -552,8 +574,9 @@ game_state.main.prototype = {
     		+ "\n"
     		+ "Feel free to leave comments or suggestions at\n"
     		+ "lazor.reflektor@gmail.com\n"
-    		);
-    	gameOverlayText.setText("LAZOR REFLEKTOR!!!\n\n\n\nGAME OVER\n\ntouch or press spacebar\nto start");
+    		, true, true);
+    	//gameOverlayText.setText("LAZOR REFLEKTOR!!!\n\n\n\nGAME OVER\n\ntouch or press spacebar\nto start");
+    	setTextCenter( gameOverlayText, "LAZOR REFLEKTOR!!!\n\n\n\nGAME OVER\n\ntouch or press spacebar\nto start");
     	//showIntroInfo();
     }, this);
 
@@ -566,33 +589,6 @@ game_state.main.prototype = {
 
 	update: function() {
 		
-		//game.physics.collide( balls, reflectorGroup1 );
-		//game.physics.collide( reflectorGroup1, reflectorGroup1 );
-
-
-		//console.log("in update");
-		// update shooter/player movement
-		var shooterAngle = shooter1.angle;
-		//console.log("shooter1.angle="+shooter1.angle+", wrappedAngle="+shooterAngle);
-		//shooter1.body.velocity.x = 0;
-		shooter1.body.acceleration.setTo(0,0);
-
-		if ( !gameOver && !shooterDead ) {
-			if ( Math.abs(shooterAngle) == 90 && moveLeftKey.isDown ) {
-				// shooter1.body.velocity.x = -minShooterVelocity;
-				shooter1.body.acceleration.x = -shooterAcceleration;
-			} else if ( Math.abs(shooterAngle) == 90 && moveRightKey.isDown ) {
-				// shooter1.body.velocity.x = minShooterVelocity;
-				shooter1.body.acceleration.x = shooterAcceleration;
-			} else if ( (Math.abs(shooterAngle) == 180 || shooterAngle == 0 ) && moveDownKey.isDown ) {
-				// shooter1.body.velocity.y = minShooterVelocity;
-				shooter1.body.acceleration.y = shooterAcceleration;
-			} else if ( (Math.abs(shooterAngle) == 180 || shooterAngle == 0 ) && moveUpKey.isDown ) {
-				// shooter1.body.velocity.y = -minShooterVelocity;
-				shooter1.body.acceleration.y = -shooterAcceleration;
-			}
-		}
-
 		reorientShooterAsNecessary();
 
 		if ( game.time.now > timeMarkerUpdateBgTextGroup ) {
@@ -637,7 +633,14 @@ game_state.main.prototype = {
     // game.debug.renderText("w="+w+", h="+h+", window.devicePixelRatio="+window.devicePixelRatio,10,10);
     // game.debug.renderText("game.width="+game.width+", game.height="+game.height,10,50);
     // game.debug.renderText("screen.width="+screen.width+", screen.height="+screen.height,10,100);
+    if ( debug === 20140401 ) {
+    	game.debug.spriteInfo(shooter1,10,180);
+    	game.debug.text("shooter1.body.x="+shooter1.body.x+", y="+shooter1.body.y,10,100);
 
+    	game.debug.text("shooter1.body.velocity.x="+shooter1.body.velocity.x+", y="+shooter1.body.velocity.y,10,120);
+    	game.debug.text("shooter1.body.acceleration.x="+shooter1.body.acceleration.x+", y="+shooter1.body.acceleration.y,10,140);
+
+  	}
 	}
 
 }
@@ -660,7 +663,8 @@ function updateGameLevelTimer() {
 	if ( debug == 1 ) return;
 
 	gameLevelTimer -= 1;
-	timerText.setText(gameLevelTimer.toString());
+	//timerText.setText(gameLevelTimer.toString());
+	setTextRight( timerText, gameLevelTimer.toString() );
 
 	console.log("updateGameLevelTimer gameLevelTimer="+gameLevelTimer);
 
@@ -723,11 +727,12 @@ function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
 		// shape.body.translate( 50, 50 );
 	}
 
-	shape.body.linearDamping = 0.1;
+	//shape.body.linearDamping = 0.1;
 
 	//shape.inputEnabled = true;
 	if ( canDrag ) {
-		shape.input.start(0,true);
+		shape.inputEnabled = true;
+		//shape.input.start(0,true);
 		shape.input.enableDrag();
 		//shape.input.enableSnap(50,50,false,true );
 		shape.events.onDragStop.add(fixSnapLocationReflector);	
@@ -806,7 +811,7 @@ function fireButtonPressed() {
 	// //aBall.body.velocity.y = 200;
 	// var theShootingAngle = shooter1.angle;
 	// game.physics.velocityFromAngle( theShootingAngle, 400, aBall.body.velocity);
-	var r = drawLaserFrom( x0, y0, shooter1.angle );
+	var r = drawLaserFrom( x0, y0 );
 
 	console.log("\nfireButtonPressed: after drawLaserFrom\n\n\n");
 
@@ -862,8 +867,10 @@ function fireButtonPressed() {
 	}
 
 	// update score/health displayed
-	healthText.setText( totalHealthShooter.toString() );
-	scoreText.setText( totalPrizeHits.toString() );
+	//healthText.setText( totalHealthShooter.toString() );
+	setTextRight( healthText, totalHealthShooter.toString() );
+	//scoreText.setText( totalPrizeHits.toString() );
+	setTextRight( scoreText, totalPrizeHits.toString() );
 
 	if ( r.isReflectingBack ) {
 		var d = shooterDirection();
@@ -1025,19 +1032,25 @@ function restartGame() {
 	totalPrizeHits = 0;
 	gameLevelTimer = maxGameLevelTime;
 
-	healthText.setText( totalHealthShooter.toString() );
-	scoreText.setText( totalPrizeHits.toString() );
-	timerText.setText( gameLevelTimer.toString() );
+	// healthText.setText( totalHealthShooter.toString() );
+	// scoreText.setText( totalPrizeHits.toString() );
+	// timerText.setText( gameLevelTimer.toString() );
+	setTextRight( healthText, totalHealthShooter.toString() );
+	setTextRight( scoreText, totalPrizeHits.toString() );
+	setTextRight( timerText, gameLevelTimer.toString() );
 	timerText.alpha = 1;
 
-	gameStartingText.setText("GET READY!\n\n3");
+	//gameStartingText.setText("GET READY!\n\n3");
+	setTextCenter( gameStartingText, "GET READY!\n\n3", true, true);
 	gameStartingText.visible = true;
 
 	game.time.events.add(Phaser.Timer.SECOND, function () {
-			gameStartingText.setText("GET READY!\n\n2");
+			//gameStartingText.setText("GET READY!\n\n2");
+			setTextCenter( gameStartingText, "GET READY!\n\n2", true, true);
 	}, this);
 	game.time.events.add(Phaser.Timer.SECOND*2, function () {
-			gameStartingText.setText("GET READY!\n\n1");
+			//gameStartingText.setText("GET READY!\n\n1");
+			setTextCenter( gameStartingText, "GET READY!\n\n1", true, true);
 	}, this);
 
 	// maybe put all of the below logic in timer to go after 3 seconds
@@ -1068,7 +1081,8 @@ function restartLevel() {
 	shooterDead = false;
 	shooter1.visible = true;
 	shooter1.alpha = 1;
-  shooter1.angle = Phaser.Math.getRandom(isDownOrIsUp);
+  //shooter1.angle = Phaser.Math.getRandom(isDownOrIsUp);
+  setShooterAngle( Phaser.Math.getRandom(isDownOrIsUp) );
   shooter1.x = game.world.centerX;
   shooter1.y = Phaser.Math.getRandom(topOrBottom); //topLimitY;
   shooter1.body.angularVelocity = 0;
@@ -1077,9 +1091,12 @@ function restartLevel() {
 	shooter1.body.velocity.x = Phaser.Math.getRandom(movingLeftOrRight); //-defShooterVelocity; // make the direction random left/right
 	// also make the starting side random (top/bottom)
 
-	healthText.setText( totalHealthShooter.toString() );
-	scoreText.setText( totalPrizeHits.toString() );
-	timerText.setText( gameLevelTimer.toString() );
+	// healthText.setText( totalHealthShooter.toString() );
+	// scoreText.setText( totalPrizeHits.toString() );
+	// timerText.setText( gameLevelTimer.toString() );
+	setTextRight( healthText, totalHealthShooter.toString() );
+	setTextRight( scoreText, totalPrizeHits.toString() );
+	setTextRight( timerText, gameLevelTimer.toString() );
 	timerText.alpha = 1;
 
 }
@@ -1109,7 +1126,7 @@ function laserTimerEventCallback() {
 // 	});
 // }
 
-function drawLaserFrom( x0, y0, angle ) {
+function drawLaserFrom( x0, y0 ) {
 	
 	if ( debug==1) console.log("\n\n\n\n\n\n-----------------------------------------\ndrawLaserFrom: IN")
 
@@ -1122,11 +1139,14 @@ function drawLaserFrom( x0, y0, angle ) {
 
 	//laserLayerTexture1.render(laserSprite1, {x:500,y:500}, false, true);
 
+	var ctx = laserLayerBM1.context;
+
 	laserLayerBM1.clear();
 	//laserLayerBM1.clearRect(0,0,game.world.width,game.world.height);
-	laserLayerBM1.setStrokeStyle(laserWidth);
-	laserLayerBM1.strokeStyle('#f00');
-	laserLayerBM1.beginPath();
+	//laserLayerBM1.setStrokeStyle(laserWidth);
+	ctx.strokeStyle = '#ff0000';
+	ctx.lineWidth = laserWidth;
+	ctx.beginPath();
 
 	var lx0,ly0;
 
@@ -1137,7 +1157,7 @@ function drawLaserFrom( x0, y0, angle ) {
 
 	var isReflectingBack = false;
 
-	laserLayerBM1.moveTo(lx0,ly0);
+	ctx.moveTo(lx0,ly0);
 
 	// calcuatedLineSegmentInfo = calcLineSegment(shooterDirection(),lx0,ly0);
 	// laserLayerBM1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
@@ -1161,7 +1181,7 @@ function drawLaserFrom( x0, y0, angle ) {
 
 		calcuatedLineSegmentInfo = calcLineSegment(laserDirection,lx0,ly0);
 
-		laserLayerBM1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
+		ctx.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
 		
 		isReflectingBack = calcuatedLineSegmentInfo.isReflectingBack;
 
@@ -1194,7 +1214,7 @@ function drawLaserFrom( x0, y0, angle ) {
 	//laserLayerBM1.moveTo(x0,y0);
 	//laserLayerBM1.closePath();
 
-	laserLayerBM1.stroke();
+	ctx.stroke();
 
 	//laserLayerBM1.fillStyle('#f00');
 	//laserLayerBM1.fill();
@@ -1699,7 +1719,7 @@ function isShapeOnPath( direction, shape, x0, y0 ) {
 }
 
 function shooterDirection() {
-	var a = shooter1.angle;
+	var a = getShooterAngle();
 	var d = {};
 	if ( a == 0 ) {
 		d.isRight = true;
@@ -1735,51 +1755,61 @@ function reorientShooterAsNecessary() {
 		}
 		if ( shooter1.x > rightLimitX && d.isDown ) {
 			changed = true;
-			shooter1.angle = 180;
-			shooter1.body.velocity.x = 0;
-			shooter1.body.velocity.y = saveVelocity;
+			//shooter1.angle = 180;
+			setShooterAngle( 180 )
+			shooter1.body.velocity.setTo(0,saveVelocity);
+			// shooter1.body.velocity.x = 0;
+			// shooter1.body.velocity.y = saveVelocity;
 			shooter1.x = rightLimitX;
 		} else if ( shooter1.y < topLimitY && d.isLeft ) {
 			changed = true;
-			shooter1.angle = 90;
+			//shooter1.angle = 90;
+			setShooterAngle( 90 );
 			shooter1.body.velocity.x = -saveVelocity;
 			shooter1.body.velocity.y = 0;
 			shooter1.y = topLimitY;
 		} else if ( shooter1.y > bottomLimitY && d.isLeft ) {
 			changed = true;
-			shooter1.angle = 270;
+			//shooter1.angle = 270;
+			setShooterAngle( 270 );
 			shooter1.body.velocity.y = 0;
 			shooter1.body.velocity.x = -saveVelocity;
 			shooter1.y = bottomLimitY;
 		} else if ( shooter1.x > rightLimitX && d.isUp ) {
 			changed = true;
-			shooter1.angle = 180;
+			//shooter1.angle = 180;
+			setShooterAngle( 180 );
 			shooter1.body.velocity.x = 0;
 			shooter1.body.velocity.y = -saveVelocity;
 			shooter1.x = rightLimitX;
 		} else if ( shooter1.x < leftLimitX && d.isUp ) {
 			changed = true;
-			shooter1.angle = 0;
+			//shooter1.angle = 0;
+			setShooterAngle( 0 );
 			shooter1.body.velocity.x = 0;
 			shooter1.body.velocity.y = -saveVelocity;
 			shooter1.x = leftLimitX;
 		} else if ( shooter1.y > bottomLimitY && d.isRight ) {
 			changed = true;
-			shooter1.angle = 270;
+			//shooter1.angle = 270;
+			setShooterAngle( 270 );
 			shooter1.body.velocity.x = saveVelocity;
 			shooter1.body.velocity.y = 0;
 			shooter1.y = bottomLimitY;
 		} else if ( shooter1.y < topLimitY && d.isRight ) {
 			changed = true;
-			shooter1.angle = 90;
+			//shooter1.angle = 90;
+			setShooterAngle( 90 );
 			shooter1.body.velocity.x = saveVelocity;
 			shooter1.body.velocity.y = 0;
 			shooter1.y = topLimitY;
 		} else if ( shooter1.x < leftLimitX && d.isDown ) {
 			changed = true;
-			shooter1.angle = 0;
-			shooter1.body.velocity.x = 0;
-			shooter1.body.velocity.y = saveVelocity;
+			//shooter1.angle = 0;
+			setShooterAngle( 0 );
+			// shooter1.body.velocity.x = 0;
+			// shooter1.body.velocity.y = saveVelocity;
+			shooter1.body.velocity.setTo(0,saveVelocity);
 			shooter1.x = leftLimitX;
 		}
 	}
@@ -1797,49 +1827,7 @@ function reorientShooterAsNecessary() {
 	} else {
 		shooter1.x = leftLimitX;
 	}
-
-	// var saveVelocity = shooter1.body.velocity.x + shooter1.body.velocity.y;
-	// if ( shooter1.x > rightLimitX && shooter1.y == topLimitY ) {
-	// 	shooter1.angle = 180;
-	// 	shooter1.body.velocity.x = 0;
-	// 	shooter1.body.velocity.y = saveVelocity;
-	// 	shooter1.x = rightLimitX;
-	// } else if ( shooter1.y < topLimitY && shooter1.x == rightLimitX ) {
-	// 	shooter1.angle = 90;
-	// 	shooter1.body.velocity.x = -saveVelocity;
-	// 	shooter1.body.velocity.y = 0;
-	// 	shooter1.y = topLimitY;
-	// } else if ( shooter1.y > bottomLimitY && shooter1.x == rightLimitX ) {
-	// 	shooter1.angle = 270;
-	// 	shooter1.body.velocity.y = 0;
-	// 	shooter1.body.velocity.x = -saveVelocity;
-	// 	shooter1.y = bottomLimitY;
-	// } else if ( shooter1.x > rightLimitX && shooter1.y == bottomLimitY ) {
-	// 	shooter1.angle = 180;
-	// 	shooter1.body.velocity.x = 0;
-	// 	shooter1.body.velocity.y = -saveVelocity;
-	// 	shooter1.x = rightLimitX;
-	// } else if ( shooter1.x < leftLimitX && shooter1.y == bottomLimitY ) {
-	// 	shooter1.angle = 0;
-	// 	shooter1.body.velocity.x = 0;
-	// 	shooter1.body.velocity.y = -saveVelocity;
-	// 	shooter1.x = leftLimitX;
-	// } else if ( shooter1.y > bottomLimitY && shooter1.x == leftLimitX ) {
-	// 	shooter1.angle = 270;
-	// 	shooter1.body.velocity.x = saveVelocity;
-	// 	shooter1.body.velocity.y = 0;
-	// 	shooter1.y = bottomLimitY;
-	// } else if ( shooter1.y < topLimitY && shooter1.x == leftLimitX ) {
-	// 	shooter1.angle = 90;
-	// 	shooter1.body.velocity.x = saveVelocity;
-	// 	shooter1.body.velocity.y = 0;
-	// 	shooter1.y = topLimitY;
-	// } else if ( shooter1.x < leftLimitX && shooter1.y == topLimitY ) {
-	// 	shooter1.angle = 0;
-	// 	shooter1.body.velocity.x = 0;
-	// 	shooter1.body.velocity.y = saveVelocity;
-	// 	shooter1.x = leftLimitX;
-	// }
+	
 }
 
 function snapToShapeGrid( xy ) {
@@ -2056,6 +2044,40 @@ function stringForDir(d) {
 	if ( d.isDown ) return "direction isDown";
 	if ( d.isLeft ) return "direction isLeft";
 	if ( d.isRight) return "direction isRight";
+}
+
+function setTextCenter( textObj, v, centerHorizontally, centerVertically ) {
+	if ( !textObj.originalXY ) {
+		textObj.originalXY = {};
+		textObj.originalXY.x = textObj.x;
+		textObj.originalXY.y = textObj.y;
+	}
+	textObj.setText(v);
+	textObj.updateTransform();
+	if ( centerHorizontally || centerHorizontally == null ) {
+		textObj.position.x = textObj.originalXY.x - textObj.textWidth / 2;
+	}
+	if ( centerVertically ) {
+		textObj.position.y = textObj.originalXY.y - textObj.textHeight / 2;
+	}
+}
+function setTextRight( textObj, v ) {
+	if ( !textObj.originalXY ) {
+		textObj.originalXY = {};
+		textObj.originalXY.x = textObj.x;
+		textObj.originalXY.y = textObj.y;
+	}
+	textObj.setText(v);
+	textObj.updateTransform();
+	textObj.position.x = textObj.originalXY.x - textObj.textWidth;
+}
+
+function getShooterAngle() {
+	return shooter1.angle;
+}
+function setShooterAngle( angle ) {
+	shooter1.angle = angle;
+	//shooter1.body.rotation = Phaser.Math.degToRad(angle);
 }
 
 // finally

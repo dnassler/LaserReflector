@@ -283,14 +283,14 @@ game_state.main.prototype = {
     for (var i=0; i<10; i++) {
     	// var x = Math.random()*game.world.width - 100;
     	// var y = Math.random()*game.world.height;
-    	var x = game.world.randomX;
+    	var x = game.world.randomX-100;
     	var y = game.world.randomY;
 
     	console.log("bgDecorationGroup1: x=",x,", y=",y);
     	var shapeName = Phaser.Math.getRandom( shapeNameArr );
     	var s = game.add.sprite(x,y,shapeName);
     	game.physics.enable(s, Phaser.Physics.ARCADE);
-    	//s.checkWorldBounds = true;
+    	s.checkWorldBounds = true;
     	s.anchor.setTo(0.5,0.5);
     	if ( shapeName == "triangleReflector1" ) {
     		s.angle = Math.floor(Math.random()*4)*90;
@@ -866,6 +866,19 @@ function fireButtonPressed() {
 		totalPrizeHits += r.hitScore; //r.prizeArr.length * (r.numLaserBounces + 1);
 	}
 
+	if ( r.spriteCollideArr.length > 0 ) {
+		r.spriteCollideArr.forEach( function(s){
+			if ( s.name !== "boxReflector1" ) {
+				s.tint = 0xFF9999;
+				//game.add.tween(s).to({tint:0xFFFFFF}, 2000, Phaser.Easing.Linear.None, true);
+				game.time.events.add(Phaser.Timer.SECOND * 3, function() {
+					s.tint = 0xFFFFFF;
+				}, this);
+
+			}
+		});
+	}
+
 	// update score/health displayed
 	//healthText.setText( totalHealthShooter.toString() );
 	setTextRight( healthText, totalHealthShooter.toString() );
@@ -1164,6 +1177,7 @@ function drawLaserFrom( x0, y0 ) {
 	// isReflectingBack = calcuatedLineSegmentInfo.isReflectingBack;
 	var laserDirection = shooterDirection();
 	var prizeArr = [];
+	var spriteCollideArr = [];
 	var numLaserBounces = 0;
 	
 	// this is the accumulated prize hit score where prizes are worth more depending 
@@ -1182,7 +1196,9 @@ function drawLaserFrom( x0, y0 ) {
 		calcuatedLineSegmentInfo = calcLineSegment(laserDirection,lx0,ly0);
 
 		ctx.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
-		
+		if ( calcuatedLineSegmentInfo.spriteCollide ) {
+			spriteCollideArr.push( calcuatedLineSegmentInfo.spriteCollide );
+		}
 		isReflectingBack = calcuatedLineSegmentInfo.isReflectingBack;
 
 		prizeArr = prizeArr.concat( calcuatedLineSegmentInfo.prizeArr );
@@ -1225,7 +1241,7 @@ function drawLaserFrom( x0, y0 ) {
 
 	console.log("drawLaserFrom: OUT isReflectingBack="+isReflectingBack);
 
-	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, hitScore:hitScore, prizeArr:prizeArr};
+	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, hitScore:hitScore, prizeArr:prizeArr, spriteCollideArr:spriteCollideArr};
 }
 
 function touchListenerOnUp() {
@@ -1313,6 +1329,7 @@ function calcLineSegment( direction, x0, y0 ) {
 		r.isReflectingBack = hitInfo.isReflectingBack;
 		r.isLastSegment = hitInfo.isLastSegment;
 		r.laserReflectionDirection = hitInfo.laserReflectionDirection;
+		r.spriteCollide = spriteCollide;
 	} else {
 		// no sprite is in the path
 		// so the end point of the line is just

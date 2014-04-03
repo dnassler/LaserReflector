@@ -145,6 +145,10 @@ var timeBombArr = [];
 
 var timeBombTimerInfo = {};
 
+var explosionBM;
+var explosionSprite;
+
+
 window.addEventListener('resize', function(event){
 	resizeGame();
 });
@@ -200,8 +204,8 @@ game_state.main.prototype = {
 		game.load.spritesheet('fireButton', 'assets/buttons/FireButton2Frames.png',200,200);
 		game.load.spritesheet('helpButton', 'assets/buttons/HelpButtonFrames.png',100,100);
 
-		var urlDataSpritesheet1 = createSpritesheetTimeBomb(prizeWidth,prizeWidth); //creates 2 frames
-		game.load.spritesheet('timeBomb', urlDataSpritesheet1, prizeWidth, prizeWidth);
+		var urlDataSpritesheet1 = createSpritesheetTimeBomb(); //creates frames
+		game.load.spritesheet('timeBomb', urlDataSpritesheet1, gridSize, gridSize);
 
 		// ==
 		// sounds...
@@ -218,7 +222,9 @@ game_state.main.prototype = {
 		game.load.audio('gameStart','assets/audio/start-game.mp3');
 		game.load.audio('gameOver','assets/audio/game-over.mp3');
 
-		game.load.audio('timeBombExplode','assets/audio/Explosion47.mp3');
+		game.load.audio('timeBombExplode','assets/audio/Randomize136.mp3');
+		game.load.audio('timeBombLaunched', 'assets/audio/Powerup19.mp3');
+		game.load.audio('timeBombArm3', 'assets/audio/Pickup_Coin34.mp3');
 
 		game.load.bitmapFont('pressStart2P','assets/fonts/Press_Start_2P/font.png', 'assets/fonts/Press_Start_2P/font.xml');
 
@@ -277,7 +283,9 @@ game_state.main.prototype = {
 		audioGameStart = game.add.audio('gameStart',0.75,false);
 		audioGameOver = game.add.audio('gameOver',0.75,false);
 
-		audioTimeBombExplode = game.add.audio('timeBombExplode',0.75,false);
+		audioTimeBombExplode = game.add.audio('timeBombExplode',1,false);
+		audioTimeBombLaunched = game.add.audio('timeBombLaunched',0.5,false);
+		audioTimeBombArm3 = game.add.audio('timeBombArm3',0.5,false);
 		// ==
 
 		cursors = game.input.keyboard.createCursorKeys();
@@ -390,14 +398,18 @@ game_state.main.prototype = {
 			//r.exists = false;
 			r.kill();
 			r.animations.add('arm1',[0,1], 1, true);
-			r.animations.add('arm2',[0,1], 3, true);
-			r.animations.add('arm3',[0,1], 8, true);
+			r.animations.add('arm2',[0,1], 4, true);
+			r.animations.add('arm3',[2,3], 8, true);
+			r.animations.add('explode',[4,5,6,7,6,7,6,7], 4, false);
 			timeBombArr.push( r );
 			allGridObjectsArr.push( r );
 		}
-
 		//launchTimeBomb();
-		//timeBombSprite.alive = false;
+
+		// explosionBM = game.add.bitmapData(game.world.width, game.world.height);
+		// explosionSprite = game.add.sprite(0,0, explosionBM);
+		// explosionSprite.alive = false;
+		// explosionSprite.exists = false;
 
 		// balls = game.add.group();
 		// // balls.createMultiple(50,'redBall');
@@ -1087,6 +1099,7 @@ function isShowingIntroInfo() {
 function restartGame() {
 
 	gameOver = false;
+	removeAllTimeBombEvents();
 	scrambleAllObjects();
 
 	introInfoGroup.visible = false;
@@ -2001,7 +2014,9 @@ function updateObjectPositions( objectsToMoveArr, allAlive ) {
 	if ( debug!==0 ) return;
 	if ( allAlive ) {
 		objectsToMoveArr.forEach( function(s) {
-			if ( s.alive ) {
+			if ( s.alive && !s.wasHit ) {
+				// the wasHit property is set on prizes and timeBomb sprites 
+				// when hit by the laser or when they explode
 				updateSingleObjectPosition( s );
 			}
 		});
@@ -2174,21 +2189,75 @@ function setShooterAngle( angle ) {
 	//shooter1.body.rotation = Phaser.Math.degToRad(angle);
 }
 
-function createSpritesheetTimeBomb( width, height ) {
+function createSpritesheetTimeBomb() {
 	// create bitmap data 
-	var bmd = game.add.bitmapData( width * 2, height );
+	var width = gridSize;
+	var height = gridSize;
+	var bombSize = prizeWidth;
+	var bombSizeHalf = bombSize/2;
+	var shiftXY = width/2-bombSize/2;
+
+	var yellow = "#FFD700";
+	var brightYellow = "#FFFF00";
+
+	var bmd = game.add.bitmapData( width * 8, height );
 	var ctx = bmd.context;
-	bmd.clear();
+
+	ctx.save();
+
+	// arm1/arm2 animation frames
+
+	ctx.translate(shiftXY,shiftXY);
 	ctx.fillStyle = "#2E8B57";
-	ctx.fillRect(0,0,width,height);
+	ctx.fillRect(0,0,bombSize,bombSize);
 	ctx.fillStyle = "#FFFFFF";
-	ctx.fillRect(0,0,width/2,height/2);
-	ctx.fillRect(width/2,height/2,width/2,height/2);
+	ctx.fillRect(0,0,bombSize/2,bombSize/2);
+	ctx.fillRect(bombSize/2,bombSize/2,bombSize/2,bombSize/2);
+
+	ctx.translate(width,0);
 	ctx.fillStyle = "#2E8B57";
-	ctx.fillRect(width,0,width,height);
+	ctx.fillRect(0,0,bombSize,bombSize);
 	ctx.fillStyle = "#FFFFFF";
-	ctx.fillRect(width+width/2,0,width/2,height/2);
-	ctx.fillRect(width,height/2,width/2,height/2);
+	ctx.fillRect(bombSize/2,0,bombSize/2,bombSize/2);
+	ctx.fillRect(0,bombSize/2,bombSize/2,bombSize/2);
+
+	// arm3 animation frames
+
+	ctx.translate(width,0);
+	ctx.fillStyle = "#2E8B57";
+	ctx.fillRect(0,0,bombSize,bombSize);
+	
+	ctx.translate(width,0);
+	ctx.fillStyle = "#FFFFFF";
+	ctx.fillRect(0,0,bombSize,bombSize);
+
+	// explode animation frames
+
+	ctx.translate(width,0);
+	ctx.translate(bombSize/2,bombSize/2); // position in center of frame
+	ctx.fillStyle = yellow;
+	ctx.fillRect(-bombSize/2,-bombSize/2,bombSize,bombSize);
+	ctx.fillStyle = brightYellow;
+	ctx.fillRect(-5,-5,10,10);
+
+	ctx.translate(width,0);
+	ctx.fillStyle = yellow;
+	ctx.fillRect(-bombSize/2-10,-bombSize/2-10,bombSize+20,bombSize+20);
+	ctx.fillStyle = brightYellow;
+	ctx.fillRect(-15,-15,30,30);
+
+	ctx.translate(width,0);
+	ctx.fillStyle = yellow;
+	ctx.fillRect(-bombSize/2-20,-bombSize/2-20,bombSize+40,bombSize+40);
+	ctx.fillStyle = brightYellow;
+	ctx.fillRect(-25,-25,50,50);
+
+	ctx.translate(width,0);
+	ctx.fillStyle = yellow;
+	ctx.fillRect(-width/2,-width/2,width,width);
+	ctx.fillStyle = brightYellow;
+	ctx.fillRect(-40,-40,80,80);
+
 	return bmd.canvas.toDataURL();
 }
 
@@ -2212,6 +2281,7 @@ function timeBombAliveArr() {
 }
 
 function launchTimeBomb() {
+	if ( gameOver || shooterDead ) return;
 	console.log("********** launchTimeBomb **********");
 	var timeBombSprite = timeBombGroup.getFirstDead();
 	if ( timeBombSprite === null ) {
@@ -2219,16 +2289,24 @@ function launchTimeBomb() {
 		return;
 	}
 	console.log("FOUND an available time bomb!!! shapeId="+timeBombSprite.shapeId);
-	timeBombSprite.alpha = 1;
 	var point = findEmptyGridLocation();
+	timeBombSprite.alpha = 0;
+	timeBombSprite.scale.setTo(6,6);
+	timeBombSprite.wasHit = true; // so that the laser cannot hit it when the timeBomb is in the process of appearing
 	timeBombSprite.reset( point.x, point.y );
-	timeBombSprite.wasHit = false;
+	game.add.tween(timeBombSprite).to({alpha:1}, 500, Phaser.Easing.None, true);
+	game.add.tween(timeBombSprite.scale).to({x:1,y:1}, 500, Phaser.Easing.None, true)
+		.onComplete.add( function() {
+				timeBombSprite.wasHit = false;
+		});
+	audioTimeBombLaunched.play();
 	//timeBombSprite.alpha = 0.1;
 	setTimeBombEvent( timeBombSprite, "arm1" );
 }
 
 function destroyedTimeBomb( timeBombSprite ) {
 	removeTimeBombEvent( timeBombSprite );
+	timeBombSprite.kill();
 	//debugTimeBombEvents();
 }
 function removeAllTimeBombEvents() {
@@ -2238,6 +2316,7 @@ function removeAllTimeBombEvents() {
 		timerInfo = timeBombTimerInfo[spriteId];
 		if ( timerInfo ) {
 			removeTimeBombEvent( timerInfo.timeBombSprite );			
+			timerInfo.timeBombSprite.kill();
 		}
 	}
 	console.log("*** removeAllTimeBombEvents");
@@ -2256,7 +2335,7 @@ function removeTimeBombEvent( timeBombSprite ) {
 	console.log("removeTimeBombEvent: bombId="+timeBombSprite.shapeId);
 	var timerInfo = timeBombTimerInfo[timeBombSprite.shapeId];
 	if ( timerInfo ) {
-		timerInfo.timeBombSprite.kill();
+		//timerInfo.timeBombSprite.kill();
 		game.time.events.remove( timerInfo.eventHandle );
 		timeBombTimerInfo[timeBombSprite.shapeId] = null;
 	}
@@ -2279,29 +2358,36 @@ function setTimeBombEvent( timeBombSprite, eventType ) {
 		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", ARM2");
 		timeBombSprite.play('arm2');
 		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*5, function(){timeBombArm2Callback(timeBombSprite);}, this );
-	} else {
+	} else if ( eventType === "arm3") {
 		timeBombSprite.play('arm3');
+		audioTimeBombArm3.play();
 		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", ARM3");
 		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*2, function(){timeBombArm3Callback(timeBombSprite);}, this );
+	} else {
+		timeBombSprite.play('explode');
+		audioTimeBombExplode.play();
+		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", EXPLODE");
+		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*2, function(){timeBombExplodeCallback(timeBombSprite);}, this );
 	}
 }
 
 function timeBombArm1Callback( timeBombSprite ) {
-	console.log("timeBombArm1Callback");
+	//console.log("timeBombArm1Callback");
 	setTimeBombEvent( timeBombSprite, "arm2" );
 }
 function timeBombArm2Callback( timeBombSprite ) {
-	console.log("timeBombArm2Callback");
+	//console.log("timeBombArm2Callback");
 	setTimeBombEvent( timeBombSprite, "arm3" );
 }
 function timeBombArm3Callback( timeBombSprite ) {
-	console.log("timeBombArm3Callback");
-	removeTimeBombEvent( timeBombSprite );
-	timeBombSprite.kill();
-	// do the explosion!
-	console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", EXPLODE");
-	audioTimeBombExplode.play();
+	//console.log("timeBombArm3Callback");
+	timeBombSprite.wasHit = true; // so that the shooter my not hit this while it is exploding
 	gameLevelTimer = Math.floor(gameLevelTimer - gameLevelTimer/4);
+	setTimeBombEvent( timeBombSprite, "explode" );
+}
+function timeBombExplodeCallback( timeBombSprite ) {
+	timeBombSprite.kill();
+	removeTimeBombEvent( timeBombSprite ); // should be unnecessary
 }
 
 // finally

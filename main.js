@@ -148,6 +148,7 @@ var timeBombTimerInfo = {};
 var explosionBM;
 var explosionSprite;
 
+var stopLaserFiringTimerHandle;
 
 window.addEventListener('resize', function(event){
 	resizeGame();
@@ -755,7 +756,7 @@ function rotateTriangleReflector( r, randomRotate ) {
 }
 
 function fullscreenKeyPressed() {
-		game.stage.scale.startFullScreen();
+		game.scale.startFullScreen();
 }
 
 function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
@@ -827,6 +828,9 @@ function fixSnapLocationReflector( reflectorSprite ) {
 function fireButtonPressed() {
 
 	console.log("fireButtonPressed IN");
+	if ( laserFiring ) {
+		stopFiringLaserCallback();
+	};
 
 	// since the SPACEBAR is used to start the gameplay (as well as shooting the laser)
 	// we need to do a few checks to decide if we need to restart the game 
@@ -996,13 +1000,23 @@ function fireButtonPressed() {
 		}
 	}
 
+	stopLaserFiringTimerHandle = game.time.events.add(200, stopFiringLaserCallback, this);
+
 }
 
 function fireButtonReleased() {
+}
+
+function stopFiringLaserCallback() {
 	if ( !laserFiring ) return;
-	console.log("fireButtonReleased!");
-	laserLayerSprite1.visible = false;
 	laserFiring = false;
+
+	if ( stopLaserFiringTimerHandle ) {
+		game.time.events.remove( stopLaserFiringTimerHandle );
+		stopLaserFiringTimerHandle = null;
+	}
+
+	laserLayerSprite1.visible = false;
 	//1----if ( laserFiring) laserLayerTexture1.render(laserLayerSprite1, {x:0,y:0}, false, true);
 	if ( laserTimerEvent ) {
 		console.log("removing timer event");

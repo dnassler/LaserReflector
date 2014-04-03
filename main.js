@@ -67,6 +67,7 @@ var gameStartingText; // shows GET READY message that is displayed at game resta
 var timeMarkerUpdateBgTextGroup = 0;
 var timeMarkerMoveBlueSquares = 0;
 var timeMarkerMovePrizes = 0;
+var timeMarkerMoveTimeBomb = 0;
 var timeMarkerTweakTriangles = 0;
 var timeMarkerGameOver = 0;
 
@@ -138,6 +139,12 @@ var shapeNameArr;
 
 var prizeHitTweenArr;
 
+var timeToLaunchTimeBomb;
+var timeBombGroup;
+var timeBombArr = [];
+
+var timeBombTimerInfo = {};
+
 window.addEventListener('resize', function(event){
 	resizeGame();
 });
@@ -193,6 +200,9 @@ game_state.main.prototype = {
 		game.load.spritesheet('fireButton', 'assets/buttons/FireButton2Frames.png',200,200);
 		game.load.spritesheet('helpButton', 'assets/buttons/HelpButtonFrames.png',100,100);
 
+		var urlDataSpritesheet1 = createSpritesheetTimeBomb(prizeWidth,prizeWidth); //creates 2 frames
+		game.load.spritesheet('timeBomb', urlDataSpritesheet1, prizeWidth, prizeWidth);
+
 		// ==
 		// sounds...
 
@@ -207,6 +217,8 @@ game_state.main.prototype = {
 		game.load.audio('prizeHit','assets/audio/button-select.mp3');
 		game.load.audio('gameStart','assets/audio/start-game.mp3');
 		game.load.audio('gameOver','assets/audio/game-over.mp3');
+
+		game.load.audio('timeBombExplode','assets/audio/Explosion47.mp3');
 
 		game.load.bitmapFont('pressStart2P','assets/fonts/Press_Start_2P/font.png', 'assets/fonts/Press_Start_2P/font.xml');
 
@@ -265,6 +277,7 @@ game_state.main.prototype = {
 		audioGameStart = game.add.audio('gameStart',0.75,false);
 		audioGameOver = game.add.audio('gameOver',0.75,false);
 
+		audioTimeBombExplode = game.add.audio('timeBombExplode',0.75,false);
 		// ==
 
 		cursors = game.input.keyboard.createCursorKeys();
@@ -286,7 +299,7 @@ game_state.main.prototype = {
     	var x = game.world.randomX-100;
     	var y = game.world.randomY;
 
-    	console.log("bgDecorationGroup1: x=",x,", y=",y);
+    	//console.log("bgDecorationGroup1: x=",x,", y=",y);
     	var shapeName = Phaser.Math.getRandom( shapeNameArr );
     	var s = game.add.sprite(x,y,shapeName);
     	game.physics.enable(s, Phaser.Physics.ARCADE);
@@ -369,6 +382,22 @@ game_state.main.prototype = {
 		prizeHitTweenArr = [];
 		// ===
 
+		// create time bomb game element
+		timeBombGroup = game.add.group();
+		for (var i=0; i<6; i++) {
+			var r = timeBombGroup.add(createGameElement("timeBomb")); //game.make.sprite(0,0,'timeBomb',0);
+			//r.alive = false;
+			//r.exists = false;
+			r.kill();
+			r.animations.add('arm1',[0,1], 1, true);
+			r.animations.add('arm2',[0,1], 3, true);
+			r.animations.add('arm3',[0,1], 8, true);
+			timeBombArr.push( r );
+			allGridObjectsArr.push( r );
+		}
+
+		//launchTimeBomb();
+		//timeBombSprite.alive = false;
 
 		// balls = game.add.group();
 		// // balls.createMultiple(50,'redBall');
@@ -606,9 +635,19 @@ game_state.main.prototype = {
 			timeMarkerMovePrizes = game.time.now + Math.random()*5000 + 5000;
 		}
 
+		if ( timeBombAliveCount() > 0 && game.time.now > timeMarkerMoveTimeBomb ) {
+			updateObjectPositions( timeBombArr, true );
+			timeMarkerMoveTimeBomb = game.time.now + 2000;
+		}
+
 		if ( game.time.now > timeMarkerTweakTriangles ) {
 			updateObjectPositions( triangleGroupArr );
 			timeMarkerTweakTriangles = game.time.now + Math.random()*5000 + 2000;
+		}
+
+		if ( game.time.now > timeToLaunchTimeBomb ) {
+			launchTimeBomb();
+			timeToLaunchTimeBomb = game.time.now + 6000;
 		}
 
 		//texture.render(laserLayer1, position, true); //the last arg specifies to clear or not
@@ -639,7 +678,10 @@ game_state.main.prototype = {
 
     	game.debug.text("shooter1.body.velocity.x="+shooter1.body.velocity.x+", y="+shooter1.body.velocity.y,10,120);
     	game.debug.text("shooter1.body.acceleration.x="+shooter1.body.acceleration.x+", y="+shooter1.body.acceleration.y,10,140);
-
+  	}
+  	if ( debug === 20140402 ) {
+  		//		if ( game.time.now > timeToLaunchTimeBomb ) {
+  		game.debug.text("game.time.now="+game.time.now+", timeToLaunchTimeBomb="+timeToLaunchTimeBomb,10,100);
   	}
 	}
 
@@ -666,7 +708,8 @@ function updateGameLevelTimer() {
 	//timerText.setText(gameLevelTimer.toString());
 	setTextRight( timerText, gameLevelTimer.toString() );
 
-	console.log("updateGameLevelTimer gameLevelTimer="+gameLevelTimer);
+	// console.log("updateGameLevelTimer gameLevelTimer="+gameLevelTimer);
+	// console.log("timeBombAliveCount()="+timeBombAliveCount());
 
 	if ( gameLevelTimer <= 0 ) {
 		
@@ -711,7 +754,7 @@ function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
 	var pointEmpty = findEmptyGridLocation();
 	rx = pointEmpty.x;
 	ry = pointEmpty.y;
-	console.log("createGameElement: pointEmpty.x="+pointEmpty.x+", pointEmpty.y="+pointEmpty.y);
+	//console.log("createGameElement: pointEmpty.x="+pointEmpty.x+", pointEmpty.y="+pointEmpty.y);
 
 	var shape = game.add.sprite( rx, ry, shapeName, frameNum );
 	shape.shapeId = nextUniqueShapeId++;
@@ -825,6 +868,8 @@ function fireButtonPressed() {
 	}
 	if ( r.prizeArr.length > 0 ) {
 
+		//timeToLaunchTimeBomb = game.time.now + 6000;
+
 		// play sound!
 		audioPrizeHit.play();
 
@@ -843,27 +888,36 @@ function fireButtonPressed() {
 
 			// flash the prizes that were hit by the laser!
 			p.wasHit = true;
+
 			game.add.tween(p.scale)
 				.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true);
 			game.add.tween(p)
 				.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
 				.onComplete.add( function () {
-					var point = findEmptyGridLocation();
 					p.wasHit = false;
 					p.scale.setTo(1,1); // sometimes this is called too early and the scale is reset by the above tween
-					p.x = point.x;
-					p.y = point.y;
-					game.add.tween(p)
-						.to({alpha:1}, 500, Phaser.Easing.Linear.None, true)
-						.onComplete.add( function () {
-							p.scale.setTo(1,1);
-						});
+					if ( p.name === "greenBox" ) {
+						var point = findEmptyGridLocation();
+						p.x = point.x;
+						p.y = point.y;
+						game.add.tween(p)
+							.to({alpha:1}, 500, Phaser.Easing.Linear.None, true)
+							.onComplete.add( function () {
+								p.scale.setTo(1,1);
+							});
+					} else if ( p.name === "timeBomb" ) {
+						//p.kill();
+						p.alpha = 1;
+						destroyedTimeBomb( p );
+					}
 				}, this);
+
 		});
 
 		//prizeHitEvent = game.time.events.loop(200, prizeHitTimerEventCallback, this);
 
 		totalPrizeHits += r.hitScore; //r.prizeArr.length * (r.numLaserBounces + 1);
+
 	}
 
 	if ( r.spriteCollideArr.length > 0 ) {
@@ -962,7 +1016,6 @@ function shooterDies() {
   //game.add.tween(shooter1).to( { scale: 0 }, 2000, Phaser.Easing.Linear.None, true);
   shooterDead = true;
   fireButtonReleased();
-
 	game.add.tween(shooter1).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true, 500);
 	if ( totalHealthShooter > 0 ) {
 		// play sound of shooter dying (but not yet dead)
@@ -978,6 +1031,9 @@ function shooterDies() {
 function gameLevelTimeout() {
 	gameOver = true;
 	shooterDead = true; // shooter is considered "dead" unless it is alive
+
+	removeAllTimeBombEvents();
+
 	if ( gameLevelTimerEvent ) {
 			game.time.events.remove(gameLevelTimerEvent);
 			gameLevelTimerEvent = null;
@@ -986,7 +1042,7 @@ function gameLevelTimeout() {
 
 	console.log("************** GAME OVER *****************");
 	// calculate final score based on the number of hits combined with the shooter health
-	var totalScore = totalPrizeHits + Math.floor(totalPrizeHits * totalHealthShooter / maxHealthShooter);
+	var totalScore = totalPrizeHits; // + Math.floor(totalPrizeHits * totalHealthShooter / maxHealthShooter);
 	finalScoreText.visible = true;
 	finalScoreText.setText( totalScore );
 	game.add.tween(finalScoreText).to({y:game.world.centerY}, 1000, Phaser.Easing.Back.Out, true);
@@ -1079,6 +1135,8 @@ function restartGame() {
 		gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
 		timeMarkerMoveBlueSquares = game.time.now + 1000;
 		timeMarkerMovePrizes = game.time.now + 2000;
+		timeMarkerMoveTimeBomb = game.time.now + 1000;
+		timeToLaunchTimeBomb = game.time.now + 6000;
 		timeMarkerTweakTriangles = game.time.now + 2000;
 		
 	}, this);
@@ -1089,6 +1147,9 @@ function restartLevel() {
 	var topOrBottom = [topLimitY, bottomLimitY];
 	var isDownOrIsUp = [90,270];
 	var movingLeftOrRight = [-defShooterVelocity, defShooterVelocity];
+	
+	removeAllTimeBombEvents();
+
 	saveShooterVelocityX = null;
 	saveShooterVelocityY = null;
 	shooterDead = false;
@@ -1362,6 +1423,12 @@ function collectPrizesOnLine( d, x0, y0, x1, y1 ) {
 			prizeArr.push( prize );
 		}
 	});
+	timeBombGroup.forEach(function (prize) {
+		if ( prize.alive && !prize.wasHit && isPrizeOnLine( prize, d, x0, y0, x1, y1 ) ) {
+			console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
+			prizeArr.push( prize );
+		}
+	});
 	console.log("collectPrizesOnLine: OUT  prizeArr.length="+prizeArr.length);
 	return prizeArr;
 }
@@ -1371,10 +1438,10 @@ function isShapeOnPath2( shape, d, x0, y0 ) {
 	return isPrizeOrShapeOnLine( shape, shapeWidth, d, x0, y0, line.x1, line.y1 );
 }
 function isPrizeOnLine( prize, d, x0, y0, x1, y1 ) {
-	return isPrizeOrShapeOnLine( prize, prizeWidth, d, x0, y0, x1, y1, true );
+	return isPrizeOrShapeOnLine( prize, prizeWidth, d, x0, y0, x1, y1 );
 }
 
-function isPrizeOrShapeOnLine( obj, sw, d, x0, y0, x1, y1, isPrizeSearch ) {
+function isPrizeOrShapeOnLine( obj, sw, d, x0, y0, x1, y1 ) {
 	//console.log("isPrizeOrShapeOnLine: obj.x="+obj.x+", y="+obj.y+", d.isUp|d.isDown="+(d.isUp|d.isDown)+", x0="+x0+", y0="+y0+", x1="+x1+",y1="+y1);
 	//var dx, dy;
 	if ( debug==1 ) 
@@ -1383,7 +1450,8 @@ function isPrizeOrShapeOnLine( obj, sw, d, x0, y0, x1, y1, isPrizeSearch ) {
 			+ ", sw="+sw
 			+ ", d="+stringForDir(d)
 			+ ", x0="+x0+", y0="+y0+", x1="+x1+", y1="+y1
-			+ ", isPrizeSearch="+isPrizeSearch);
+			//+ ", isPrizeSearch="+isPrizeSearch
+			);
 	
 	if ( Math.abs(obj.x-x0) < sw/2 && Math.abs(obj.y-y0) < sw/2 ) {
 		// ignore this "obj" because we are starting our line from within it!
@@ -1929,10 +1997,18 @@ function updateSingleObjectPosition( b ) {
 }
 
 // this function mischeiviously changes the locations of some or all of the deadly blue squares
-function updateObjectPositions( objectsToMoveArr ) {
-	if ( debug==1 ) return;
-	var b = Phaser.Math.getRandom( objectsToMoveArr );
-	updateSingleObjectPosition( b );
+function updateObjectPositions( objectsToMoveArr, allAlive ) {
+	if ( debug!==0 ) return;
+	if ( allAlive ) {
+		objectsToMoveArr.forEach( function(s) {
+			if ( s.alive ) {
+				updateSingleObjectPosition( s );
+			}
+		});
+	} else {
+		var b = Phaser.Math.getRandom( objectsToMoveArr );
+		updateSingleObjectPosition( b );
+	}
 }
 
 function tryGetNearbyLocation( x, y ) {
@@ -1992,15 +2068,16 @@ function findEmptyGridLocation() {
 }
 
 function scrambleAllObjects() {
-		allGridObjectsArr.forEach(function (b) {
-			b.alive = false;
-		});
+		// allGridObjectsArr.forEach(function (b) {
+		// 	b.alive = false;
+		// });
 		// create new arrangements
 		allGridObjectsArr.forEach(function (b) {
-			var point = findEmptyGridLocation();
-			b.x = point.x;
-			b.y = point.y;
-			b.alive = true;
+			if ( b.alive ) {
+				var point = findEmptyGridLocation();
+				b.x = point.x;
+				b.y = point.y;
+			}
 		});
 }
 
@@ -2095,6 +2172,136 @@ function getShooterAngle() {
 function setShooterAngle( angle ) {
 	shooter1.angle = angle;
 	//shooter1.body.rotation = Phaser.Math.degToRad(angle);
+}
+
+function createSpritesheetTimeBomb( width, height ) {
+	// create bitmap data 
+	var bmd = game.add.bitmapData( width * 2, height );
+	var ctx = bmd.context;
+	bmd.clear();
+	ctx.fillStyle = "#2E8B57";
+	ctx.fillRect(0,0,width,height);
+	ctx.fillStyle = "#FFFFFF";
+	ctx.fillRect(0,0,width/2,height/2);
+	ctx.fillRect(width/2,height/2,width/2,height/2);
+	ctx.fillStyle = "#2E8B57";
+	ctx.fillRect(width,0,width,height);
+	ctx.fillStyle = "#FFFFFF";
+	ctx.fillRect(width+width/2,0,width/2,height/2);
+	ctx.fillRect(width,height/2,width/2,height/2);
+	return bmd.canvas.toDataURL();
+}
+
+function timeBombAliveCount() {
+	var count = 0;
+	timeBombArr.forEach( function(tb) {
+		if ( tb.alive ) {
+			count += 1;
+		}
+	});
+	return count;
+}
+function timeBombAliveArr() {
+	var arr = [];
+	timeBombArr.forEach( function(tb) {
+		if ( tb.alive ) {
+			arr.push( tb );
+		}
+	});
+	return arr;
+}
+
+function launchTimeBomb() {
+	console.log("********** launchTimeBomb **********");
+	var timeBombSprite = timeBombGroup.getFirstDead();
+	if ( timeBombSprite === null ) {
+		console.log("unable to find an available time bomb");
+		return;
+	}
+	console.log("FOUND an available time bomb!!! shapeId="+timeBombSprite.shapeId);
+	timeBombSprite.alpha = 1;
+	var point = findEmptyGridLocation();
+	timeBombSprite.reset( point.x, point.y );
+	timeBombSprite.wasHit = false;
+	//timeBombSprite.alpha = 0.1;
+	setTimeBombEvent( timeBombSprite, "arm1" );
+}
+
+function destroyedTimeBomb( timeBombSprite ) {
+	removeTimeBombEvent( timeBombSprite );
+	//debugTimeBombEvents();
+}
+function removeAllTimeBombEvents() {
+	var timerInfo = null;
+	var spriteId;
+	for ( spriteId in timeBombTimerInfo ) {
+		timerInfo = timeBombTimerInfo[spriteId];
+		if ( timerInfo ) {
+			removeTimeBombEvent( timerInfo.timeBombSprite );			
+		}
+	}
+	console.log("*** removeAllTimeBombEvents");
+}
+// function debugTimeBombEvents() {
+// 	console.log("\n\n\ndebugTimeBombEvents");
+// 	var timeBombInfo = null;
+// 	for ( spriteId in timeBombTimerInfo ) {
+// 		console.log("timeBombSpriteId="+spriteId);
+// 		timeBombInfo = timeBombTimerInfo[spriteId];
+// 		if ( timeBombInfo ) removeTimeBombEvent( timeBombInfo.timeBombSprite );
+// 	}
+// 	console.log("-------------------------\n\n\n");
+// }
+function removeTimeBombEvent( timeBombSprite ) {
+	console.log("removeTimeBombEvent: bombId="+timeBombSprite.shapeId);
+	var timerInfo = timeBombTimerInfo[timeBombSprite.shapeId];
+	if ( timerInfo ) {
+		timerInfo.timeBombSprite.kill();
+		game.time.events.remove( timerInfo.eventHandle );
+		timeBombTimerInfo[timeBombSprite.shapeId] = null;
+	}
+}
+function setTimeBombEvent( timeBombSprite, eventType ) {
+	var timerInfo = timeBombTimerInfo[timeBombSprite.shapeId];
+	if ( timerInfo ) {
+		game.time.events.remove( timerInfo.timeEventHandle );
+	} else {
+		timerInfo = {};
+		timeBombTimerInfo[timeBombSprite.shapeId] = timerInfo;
+	}
+	timerInfo.eventType = eventType;
+	timerInfo.timeBombSprite = timeBombSprite;
+	if ( eventType === "arm1" ) {
+		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+",  ARM1");
+		timeBombSprite.play('arm1');
+		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*15, function(){timeBombArm1Callback(timeBombSprite);}, this );
+	} else if ( eventType === "arm2" ) {
+		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", ARM2");
+		timeBombSprite.play('arm2');
+		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*5, function(){timeBombArm2Callback(timeBombSprite);}, this );
+	} else {
+		timeBombSprite.play('arm3');
+		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", ARM3");
+		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*2, function(){timeBombArm3Callback(timeBombSprite);}, this );
+	}
+}
+
+function timeBombArm1Callback( timeBombSprite ) {
+	console.log("timeBombArm1Callback");
+	setTimeBombEvent( timeBombSprite, "arm2" );
+}
+function timeBombArm2Callback( timeBombSprite ) {
+	console.log("timeBombArm2Callback");
+	setTimeBombEvent( timeBombSprite, "arm3" );
+}
+function timeBombArm3Callback( timeBombSprite ) {
+	console.log("timeBombArm3Callback");
+	removeTimeBombEvent( timeBombSprite );
+	timeBombSprite.kill();
+	// do the explosion!
+	console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", EXPLODE");
+	audioTimeBombExplode.play();
+	gameLevelTimer = Math.floor(gameLevelTimer - gameLevelTimer/4);
 }
 
 // finally

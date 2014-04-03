@@ -1028,6 +1028,7 @@ function shooterDies() {
   //game.add.tween(shooter1).to( { scale: 0 }, 2000, Phaser.Easing.Linear.None, true);
   shooterDead = true;
   fireButtonReleased();
+  fadeOutAllTimeBombs();
 	game.add.tween(shooter1).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true, 500);
 	if ( totalHealthShooter > 0 ) {
 		// play sound of shooter dying (but not yet dead)
@@ -2308,6 +2309,13 @@ function destroyedTimeBomb( timeBombSprite ) {
 	removeTimeBombEvent( timeBombSprite );
 	timeBombSprite.kill();
 	//debugTimeBombEvents();
+}
+function fadeOutAllTimeBombs() {
+	game.add.tween(timeBombGroup).to({alpha:0}, 1000, Phaser.Easing.None, true)
+		.onComplete.add( function () {
+			removeAllTimeBombEvents();
+			timeBombGroup.alpha = 1;
+		});
 }
 function removeAllTimeBombEvents() {
 	var timerInfo = null;

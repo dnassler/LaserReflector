@@ -143,6 +143,10 @@ var timeToLaunchTimeBomb;
 var timeBombGroup;
 var timeBombArr = [];
 
+var specialPrizesArr = [];
+
+var timeBombTextGroup;
+
 var timeBombTimerInfo = {};
 
 // var explosionBM;
@@ -391,10 +395,14 @@ game_state.main.prototype = {
 			if ( i === 0 ) {
 				r = prizeGroup.add( createGameElement("greenBox10", false, false) );
 				r.prizePoints = 10;
+				r.timeMarkerMove = game.time.now + Math.random()*5000 + 1000;
+				specialPrizesArr.push( r );
 			} else if ( i === 1 ) {
 				r = prizeGroup.add( createGameElement("greenBox10time", false, false) );
 				r.prizePoints = 0;
 				r.prizeTimeOffset = 10;
+				r.timeMarkerMove = game.time.now + Math.random()*5000 + 1000;
+				specialPrizesArr.push( r );
 			} else {
 				r = prizeGroup.add( createGameElement("greenBox", false, false) );
 				r.prizePoints = 1;
@@ -408,7 +416,9 @@ game_state.main.prototype = {
 
 		// create time bomb game element
 		timeBombGroup = game.add.group();
+		timeBombTextGroup = game.add.group();
 		for (var i=0; i<10; i++) {
+			timeBombTextGroup.add(createGameElement("textMinus25")).kill();
 			var r = timeBombGroup.add(createGameElement("timeBomb")); //game.make.sprite(0,0,'timeBomb',0);
 			//r.alive = false;
 			//r.exists = false;
@@ -667,6 +677,15 @@ game_state.main.prototype = {
 		if ( timeBombAliveCount() > 0 && game.time.now > timeMarkerMoveTimeBomb ) {
 			updateObjectPositions( timeBombArr, true );
 			timeMarkerMoveTimeBomb = game.time.now + 2000;
+		}
+
+		if ( specialPrizesArr.length > 0 ) {
+			specialPrizesArr.forEach( function(p) {
+				if ( game.time.now > p.timeMarkerMove ) {
+					updateSingleObjectPosition( p );
+					p.timeMarkerMove = game.time.now + Math.random()*5000 + 1000;
+				}
+			});
 		}
 
 		if ( game.time.now > timeMarkerTweakTriangles ) {
@@ -1030,6 +1049,7 @@ function fireButtonPressed() {
 }
 
 function fireButtonReleased() {
+	stopFiringLaserCallback();
 }
 
 function stopFiringLaserCallback() {
@@ -2398,6 +2418,11 @@ function fadeOutAllTimeBombs() {
 			removeAllTimeBombEvents();
 			timeBombGroup.alpha = 1;
 		});
+	// game.add.tween(timeBombTextGroup).to({alpha:0}, 1000, Phaser.Easing.None, true)
+	// 	.onComplete.add( function () {
+	// 		//removeAllTimeBombEvents();
+	// 		timeBombTextGroup.alpha = 1;
+	// 	});	
 }
 function removeAllTimeBombEvents() {
 	var timerInfo = null;
@@ -2405,7 +2430,11 @@ function removeAllTimeBombEvents() {
 	for ( spriteId in timeBombTimerInfo ) {
 		timerInfo = timeBombTimerInfo[spriteId];
 		if ( timerInfo ) {
-			removeTimeBombEvent( timerInfo.timeBombSprite );			
+			removeTimeBombEvent( timerInfo.timeBombSprite );
+			if ( timerInfo.timeBombSprite.textMinus25Sprite ) {
+				timerInfo.timeBombSprite.textMinus25Sprite.kill();
+				timerInfo.timeBombSprite.textMinus25Sprite = null;
+			}			
 			timerInfo.timeBombSprite.kill();
 		}
 	}
@@ -2471,6 +2500,7 @@ function timeBombArm2Callback( timeBombSprite ) {
 }
 function timeBombArm3Callback( timeBombSprite ) {
 	//console.log("timeBombArm3Callback");
+
 	timeBombSprite.wasHit = true; // so that the shooter my not hit this while it is exploding
 	gameLevelTimer -= 25; //Math.floor(gameLevelTimer - gameLevelTimer/4);
 	if ( gameLevelTimer < 0 ) {
@@ -2480,8 +2510,18 @@ function timeBombArm3Callback( timeBombSprite ) {
 }
 function timeBombExplodeCallback( timeBombSprite ) {
 	removeTimeBombEvent( timeBombSprite ); // should be unnecessary
-	game.add.tween(timeBombSprite).to({alpha:0},500,Phaser.Easing.Linear.None,true)
+	
+	var textMinus25 = timeBombTextGroup.getFirstDead();
+	textMinus25.alpha = 1;
+	textMinus25.reset( timeBombSprite.x, timeBombSprite.y );
+	timeBombSprite.textMinus25Sprite = textMinus25;
+
+	game.add.tween(timeBombSprite).to({alpha:0},1000,Phaser.Easing.Linear.None,true)
 		.onComplete.add(function() {
+			if ( timeBombSprite.textMinus25Sprite ) {
+				timeBombSprite.textMinus25Sprite.kill();
+				timeBombSprite.textMinus25Sprite = null;
+			}
 			timeBombSprite.kill();
 		});
 }

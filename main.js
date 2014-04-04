@@ -145,8 +145,8 @@ var timeBombArr = [];
 
 var timeBombTimerInfo = {};
 
-var explosionBM;
-var explosionSprite;
+// var explosionBM;
+// var explosionSprite;
 
 var stopLaserFiringTimerHandle;
 
@@ -201,6 +201,9 @@ game_state.main.prototype = {
 		game.load.image('laser1', "assets/laserTexture1.png");
 
 		game.load.image('greenBox', "assets/greenBox.png");
+		game.load.image('greenBox10', "assets/greenBox10.png");
+
+		//game.load.image('textMinus25', "assets/textMinus25.png");
 
 		game.load.spritesheet('fireButton', 'assets/buttons/FireButton2Frames.png',200,200);
 		game.load.spritesheet('helpButton', 'assets/buttons/HelpButtonFrames.png',100,100);
@@ -393,7 +396,7 @@ game_state.main.prototype = {
 
 		// create time bomb game element
 		timeBombGroup = game.add.group();
-		for (var i=0; i<6; i++) {
+		for (var i=0; i<10; i++) {
 			var r = timeBombGroup.add(createGameElement("timeBomb")); //game.make.sprite(0,0,'timeBomb',0);
 			//r.alive = false;
 			//r.exists = false;
@@ -660,7 +663,7 @@ game_state.main.prototype = {
 
 		if ( game.time.now > timeToLaunchTimeBomb ) {
 			launchTimeBomb();
-			timeToLaunchTimeBomb = game.time.now + 6000;
+			timeToLaunchTimeBomb = game.time.now + timeBombIntervalNextBombLaunch();
 		}
 
 		//texture.render(laserLayer1, position, true); //the last arg specifies to clear or not
@@ -714,10 +717,15 @@ function helpButtonCallback() {
 }
 
 function updateGameLevelTimer() {
+	console.log("updateGameLevelTimer: IN");
 	if ( gameOver ) return;
 	if ( debug == 1 ) return;
 
+	console.log("updateGameLevelTimer...");
 	gameLevelTimer -= 1;
+	if ( gameLevelTimer < 0 ) {
+		gameLevelTimer = 0;
+	}
 	//timerText.setText(gameLevelTimer.toString());
 	setTextRight( timerText, gameLevelTimer.toString() );
 
@@ -1164,7 +1172,7 @@ function restartGame() {
 		timeMarkerMoveBlueSquares = game.time.now + 1000;
 		timeMarkerMovePrizes = game.time.now + 2000;
 		timeMarkerMoveTimeBomb = game.time.now + 1000;
-		timeToLaunchTimeBomb = game.time.now + 6000;
+		timeToLaunchTimeBomb = game.time.now + timeBombIntervalNextBombLaunch();
 		timeMarkerTweakTriangles = game.time.now + 2000;
 		
 	}, this);
@@ -1590,7 +1598,7 @@ function calcHitPoint( direction, spriteCollide, x0, y0 ) {
 				game.time.events.add(1000, function() {
 					spriteCollide.animations.getAnimation('flashRed').stop();
 					spriteCollide.frame = 0;
-				});
+				}, this);
 			}
 			r.laserReflectionDirection = invertLaserDirection(direction);
 		}
@@ -2310,6 +2318,11 @@ function timeBombAliveArr() {
 
 function launchTimeBomb() {
 	if ( gameOver || shooterDead ) return;
+	console.log("launchTimeBomb?");
+	if ( timeBombGroup.countLiving() >= maxSimultaneousTimeBombs() ) {
+		console.log("too many time bombs in play based on time remaining so skip launch");
+		return;
+	}
 	console.log("********** launchTimeBomb **********");
 	var timeBombSprite = timeBombGroup.getFirstDead();
 	if ( timeBombSprite === null ) {
@@ -2330,6 +2343,24 @@ function launchTimeBomb() {
 	audioTimeBombLaunched.play();
 	//timeBombSprite.alpha = 0.1;
 	setTimeBombEvent( timeBombSprite, "arm1" );
+}
+
+function maxSimultaneousTimeBombs() {
+	if ( gameLevelTimer < 25 )	{
+		return 1;
+	} else if ( gameLevelTimer < 50 ) {
+		return 2;
+	} else if ( gameLevelTimer < 100 ) {
+		return 4;
+	} else if ( gameLevelTimer < 150 ) {
+		return 6;
+	} else if ( gameLevelTimer < 175 ) {
+		return 8;
+	}
+	return 10;
+}
+function timeBombIntervalNextBombLaunch() {
+	return game.rnd.integerInRange(1000, 15000);
 }
 
 function destroyedTimeBomb( timeBombSprite ) {
@@ -2378,7 +2409,7 @@ function removeTimeBombEvent( timeBombSprite ) {
 function setTimeBombEvent( timeBombSprite, eventType ) {
 	var timerInfo = timeBombTimerInfo[timeBombSprite.shapeId];
 	if ( timerInfo ) {
-		game.time.events.remove( timerInfo.timeEventHandle );
+		game.time.events.remove( timerInfo.eventHandle );
 	} else {
 		timerInfo = {};
 		timeBombTimerInfo[timeBombSprite.shapeId] = timerInfo;
@@ -2417,12 +2448,18 @@ function timeBombArm2Callback( timeBombSprite ) {
 function timeBombArm3Callback( timeBombSprite ) {
 	//console.log("timeBombArm3Callback");
 	timeBombSprite.wasHit = true; // so that the shooter my not hit this while it is exploding
-	gameLevelTimer = Math.floor(gameLevelTimer - gameLevelTimer/4);
+	gameLevelTimer -= 25; //Math.floor(gameLevelTimer - gameLevelTimer/4);
+	if ( gameLevelTimer < 0 ) {
+		gameLevelTimer = 0;
+	}
 	setTimeBombEvent( timeBombSprite, "explode" );
 }
 function timeBombExplodeCallback( timeBombSprite ) {
-	timeBombSprite.kill();
 	removeTimeBombEvent( timeBombSprite ); // should be unnecessary
+	game.add.tween(timeBombSprite).to({alpha:0},500,Phaser.Easing.Linear.None,true)
+		.onComplete.add(function() {
+			timeBombSprite.kill();
+		});
 }
 
 // finally

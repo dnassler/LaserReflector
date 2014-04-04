@@ -75,7 +75,7 @@ var maxGameLevelTime = 99;
 var maxHealthShooter = 5;
 
 var timerTextTween = null;
-var extraGameTimePerPrize = 2;
+var extraGameTimePerPrize = 1;
 var gameLevelTimer;
 var gameOver = true;
 var shooterDead = true;
@@ -202,8 +202,9 @@ game_state.main.prototype = {
 
 		game.load.image('greenBox', "assets/greenBox.png");
 		game.load.image('greenBox10', "assets/greenBox10.png");
+		game.load.image('greenBox10time', "assets/greenBox10time.png");
 
-		//game.load.image('textMinus25', "assets/textMinus25.png");
+		game.load.image('textMinus25', "assets/textMinus25.png");
 
 		game.load.spritesheet('fireButton', 'assets/buttons/FireButton2Frames.png',200,200);
 		game.load.spritesheet('helpButton', 'assets/buttons/HelpButtonFrames.png',100,100);
@@ -386,7 +387,18 @@ game_state.main.prototype = {
 		prizeGroup = game.add.group();
 		for (var i=0; i<10; i++) {
 			// do not allow the greenBox to be dragged
-			var r = prizeGroup.add( createGameElement("greenBox", false, false) );
+			var r;
+			if ( i === 0 ) {
+				r = prizeGroup.add( createGameElement("greenBox10", false, false) );
+				r.prizePoints = 10;
+			} else if ( i === 1 ) {
+				r = prizeGroup.add( createGameElement("greenBox10time", false, false) );
+				r.prizePoints = 0;
+				r.prizeTimeOffset = 10;
+			} else {
+				r = prizeGroup.add( createGameElement("greenBox", false, false) );
+				r.prizePoints = 1;
+			}
 			r.wasHit = false;
 			prizeGroupArr.push( r );
 			allGridObjectsArr.push( r );
@@ -401,6 +413,7 @@ game_state.main.prototype = {
 			//r.alive = false;
 			//r.exists = false;
 			r.kill();
+			r.prizePoints = 1;
 			r.animations.add('arm1',[0,1], 1, true);
 			r.animations.add('arm2',[0,1], 4, true);
 			r.animations.add('arm3',[2,3], 8, true);
@@ -908,7 +921,11 @@ function fireButtonPressed() {
 			// 		.loop() );
 			
 			// increase the game time for each prize hit
-			gameLevelTimer += extraGameTimePerPrize;
+			if ( p.prizeTimeOffset ) {
+				gameLevelTimer += p.prizeTimeOffset;
+			} else {
+				gameLevelTimer += extraGameTimePerPrize;
+			}
 
 			// flash the prizes that were hit by the laser!
 			p.wasHit = true;
@@ -920,7 +937,7 @@ function fireButtonPressed() {
 				.onComplete.add( function () {
 					p.wasHit = false;
 					p.scale.setTo(1,1); // sometimes this is called too early and the scale is reset by the above tween
-					if ( p.name === "greenBox" ) {
+					if ( p.name === "greenBox" || p.name === "greenBox10" || p.name === "greenBox10time" ) {
 						var point = findEmptyGridLocation();
 						p.x = point.x;
 						p.y = point.y;
@@ -1280,6 +1297,7 @@ function drawLaserFrom( x0, y0 ) {
 	// this is the accumulated prize hit score where prizes are worth more depending 
 	// on the number of bounces needed to reach them
 	var hitScore = 0;
+	var prizePointsForSegment = 0;
 	
 	while ( !calcuatedLineSegmentInfo || !calcuatedLineSegmentInfo.isLastSegment ) {
 		
@@ -1299,7 +1317,13 @@ function drawLaserFrom( x0, y0 ) {
 		isReflectingBack = calcuatedLineSegmentInfo.isReflectingBack;
 
 		prizeArr = prizeArr.concat( calcuatedLineSegmentInfo.prizeArr );
-		hitScore += calcuatedLineSegmentInfo.prizeArr.length * (numLaserBounces+1);
+		//hitScore += calcuatedLineSegmentInfo.prizeArr.length * (numLaserBounces+1);
+		prizePointsForSegment = 0;
+		calcuatedLineSegmentInfo.prizeArr.forEach(function(p){ prizePointsForSegment += p.prizePoints; });
+		if ( debug == 20140404 ) {
+			console.log("drawLaserFrom: prizePointsForSegment="+prizePointsForSegment);
+		}
+		hitScore += prizePointsForSegment * (numLaserBounces+1);
 
 		//console.log("drawLaserFrom: calcuatedLineSegmentInfo.prizeArr.length="+calcuatedLineSegmentInfo.prizeArr.length);
 		//console.log("drawLaserFrom: prizeArr.length="+prizeArr.length);
@@ -2024,7 +2048,7 @@ function updateSingleObjectPosition( b ) {
 	if ( isShapeTriangle(b) ) {
 		audioSlidingTriangle.play();
 		rotateTriangleReflector( b, true );
-	} else if ( b.name == 'greenBox' ) {
+	} else if ( b.name == 'greenBox' || b.name == 'greenBox10' || b.name == 'greenBox10time' ) {
 		audioSlidingPrize.play();
 	} else {
 		audioSliding.play();

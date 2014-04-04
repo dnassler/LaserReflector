@@ -2254,6 +2254,19 @@ function createSpritesheetTimeBomb() {
 	ctx.fillRect(-bombSize/2,-bombSize/2,bombSize,bombSize);
 	ctx.fillStyle = brightYellow;
 	ctx.fillRect(-5,-5,10,10);
+	ctx.save();
+	ctx.strokeStyle = brightYellow;
+	ctx.beginPath();
+	ctx.moveTo(0,-bombSize/2-5);
+	ctx.lineTo(0,0);
+	ctx.moveTo(0,bombSize/2+5);
+	ctx.lineTo(0,height);
+	ctx.moveTo(-bombSize-5,0);
+	ctx.lineTo(1,0);
+	ctx.moveTo(bombSize+5,0);
+	ctx.lineTo(width-1,0);
+	ctx.stroke();
+	ctx.restore();
 
 	ctx.translate(width,0);
 	ctx.fillStyle = yellow;

@@ -831,6 +831,10 @@ function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
 		//shape.input.start(0,true);
 		shape.input.enableDrag();
 		//shape.input.enableSnap(50,50,false,true );
+		shape.events.onDragStart.add(function(s) { 
+			s.saveShapeOriginalPositionX = s.x;
+			s.saveShapeOriginalPositionY = s.y;
+		});
 		shape.events.onDragStop.add(fixSnapLocationReflector);	
 		shape.events.onInputDown.add(clickOnReflectorListener, this);	
 	}
@@ -846,6 +850,13 @@ function fixSnapLocationReflector( reflectorSprite ) {
 	var toXY = snapToShapeGrid( {x:reflectorSprite.x, y:reflectorSprite.y} );
 	var toX = toXY.x;
 	var toY = toXY.y;
+
+	if ( !isValidGridLocation(toX, toY) ) {
+		reflectorSprite.x = reflectorSprite.saveShapeOriginalPositionX;
+		reflectorSprite.y = reflectorSprite.saveShapeOriginalPositionY;
+		return;
+	}
+
 	// var toX = Phaser.Math.snapToFloor( reflectorSprite.x, gridSize ) + halfGridSize + extraWidth/2;
 	// var toY = Phaser.Math.snapToFloor( reflectorSprite.y, gridSize ) + halfGridSize + extraHeight/2;
 
@@ -863,6 +874,26 @@ function fixSnapLocationReflector( reflectorSprite ) {
 
 	reflectorSprite.x = freeLocation.x;
 	reflectorSprite.y = freeLocation.y;
+}
+
+function isValidGridLocation(x,y, doSnap) {
+	// checks if the given x/y is a possible location for a shape
+	// NOTE: this does not check if there IS a shape at that location
+	var checkX, checkY;
+	var toXY;
+	if ( doSnap ) {
+		toXY = snapToShapeGrid( {x:x, y:y} );
+		checkX = toXY.x;
+		checkY = toXY.y;
+	} else {
+		checkX = x;
+		checkY = y;
+	}
+	if ( checkX > leftLimitX && checkX < rightLimitX && checkY > topLimitY && checkY < bottomLimitY ) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
 function fireButtonPressed() {
@@ -2056,6 +2087,12 @@ function updateSingleObjectPosition( b ) {
 				// check that the location moved to doesn't have more than one occupant (i.e. this could occur if another 
 				// object moved there within the last 500ms). Count the number of objects at the new location and if there 
 				// is more than one then move this piece again.
+
+				// the following snap shouldn't be necessary but just in case
+				var toXY = snapToShapeGrid( {x:newLocationPoint.x, y:newLocationPoint.y} );
+				b.x = toXY.x;
+				b.y = toXY.y;
+
 				console.log("updateSingleObjectPosition: completed move, checking if need to move again");
 				var count = shapeCountAtLocation( newLocationPoint.x, newLocationPoint.y );
 				if ( count > 1 ) {

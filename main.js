@@ -131,6 +131,7 @@ var bgTextGroup;
 
 var boxReflectorArr;
 var prizeGroupArr;
+var basicPrizeGroupArr;
 var triangleGroupArr;
 
 var allGridObjectsArr;
@@ -388,6 +389,7 @@ game_state.main.prototype = {
 
 		// add prizes
 		prizeGroupArr = [];
+		basicPrizeGroupArr = [];
 		prizeGroup = game.add.group();
 		for (var i=0; i<10; i++) {
 			// do not allow the greenBox to be dragged
@@ -406,6 +408,7 @@ game_state.main.prototype = {
 			} else {
 				r = prizeGroup.add( createGameElement("greenBox", false, false) );
 				r.prizePoints = 1;
+				basicPrizeGroupArr.push( r );
 			}
 			r.wasHit = false;
 			prizeGroupArr.push( r );
@@ -670,7 +673,7 @@ game_state.main.prototype = {
 		}
 
 		if ( game.time.now > timeMarkerMovePrizes ) {
-			updateObjectPositions( prizeGroupArr );
+			updateObjectPositions( basicPrizeGroupArr );
 			timeMarkerMovePrizes = game.time.now + Math.random()*5000 + 5000;
 		}
 

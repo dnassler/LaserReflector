@@ -2363,7 +2363,7 @@ function createSpritesheetPrize10Points() {
 	// ctx.fillRect(-pw/2,-ph/2,pw,ph/2);
 	ctx.strokeStyle = "#FFFFFF";
 	ctx.lineWidth = 5;
-	ctx.strokeRect(-pw/2-5,-pw/2-5, pw+10,pw+10);
+	// ctx.strokeRect(-pw/2-5,-pw/2-5, pw+10,pw+10);
 
 	ctx.translate(fw,0);
 	ctx.fillStyle = "#2E8B57"; //seagreen
@@ -2408,7 +2408,7 @@ function createSpritesheetPrize10Seconds() {
 	ctx.fillRect(-pw/2,-ph/2,pw/2,ph);
 	ctx.strokeStyle = "#FFFFFF";
 	ctx.lineWidth = 5;
-	ctx.strokeRect(-pw/2-5,-pw/2-5, pw+10,pw+10);
+	// ctx.strokeRect(-pw/2-5,-pw/2-5, pw+10,pw+10);
 
 	ctx.translate(fw,0);
 	ctx.fillStyle = "#2E8B57"; //seagreen

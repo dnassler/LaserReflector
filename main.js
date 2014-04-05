@@ -45,7 +45,10 @@ var halfGridSize = gridSize/2;
 var shapeScale = 1;
 var shapeWidth = 100;
 var laserWidth = 10;
+var laserTrailWidth = 5;
 var prizeWidth = 34;
+var laserPathId = 0; // each laser fire path will have it's own id
+var laserTrailTween;
 
 var numBlocksVertical;
 var numBlocksHorizontal;
@@ -87,6 +90,10 @@ var balls;
 var blocker1;
 var laserLayerBM1; // bitmap for drawing lasers
 var laserSprite1; // the sprite that shows the laser bitmap
+
+var laserTrailBM; 		// holds the laser trail left after a laser firing
+var laserTrailSprite; // holds the laser trail left after a laser firing
+
 var laserTextureSprite1;
 var laserLayerTexture1;
 var laserLayerTexture1sprite;
@@ -513,6 +520,10 @@ game_state.main.prototype = {
 		laserLayerSprite1 = game.add.sprite(0,0,laserLayerBM1);
 		laserLayerSprite1.visible = false;
 
+		laserTrailBM = game.add.bitmapData(game.world.width,game.world.height);
+		laserTrailSprite = game.add.sprite(0,0,laserTrailBM);
+		laserTrailSprite.visible = false;
+
 		fireButtonSprite = game.add.button(game.world.width-200,game.world.height-200, "fireButton", null, this, 0,0,1,0);
 		fireButtonSprite.onInputDown.add(fireButtonPressed);
 		fireButtonSprite.onInputUp.add(fireButtonReleased);
@@ -928,6 +939,7 @@ function isValidGridLocation(x,y, doSnap) {
 function fireButtonPressed() {
 
 	console.log("fireButtonPressed IN");
+	laserPathId += 1;
 	if ( laserFiring ) {
 		stopFiringLaserCallback();
 	};
@@ -1122,6 +1134,23 @@ function stopFiringLaserCallback() {
 	}
 
 	laserLayerSprite1.visible = false;
+
+	// show laser trails
+	if ( laserTrailTween ) {
+		laserTrailTween.stop();
+		laserTrailTween = null;
+	}
+	laserTrailSprite.visible = true;
+	laserTrailSprite.alpha = 1;
+	laserTrailTween = game.add.tween(laserTrailSprite).to({alpha:0},500,Phaser.Easing.Linear.None,true);
+	// game.time.events.add(500, 
+	// 	(function(laserPathId0) {
+	// 		if ( laserPathId === laserPathId0) {
+	// 			laserTrailSprite.visible = false;
+	// 		}
+	// 	})(laserPathId)
+	// 	, this);
+
 	//1----if ( laserFiring) laserLayerTexture1.render(laserLayerSprite1, {x:0,y:0}, false, true);
 	if ( laserTimerEvent ) {
 		console.log("removing timer event");
@@ -1347,13 +1376,21 @@ function drawLaserFrom( x0, y0 ) {
 	//laserLayerTexture1.render(laserSprite1, {x:500,y:500}, false, true);
 
 	var ctx = laserLayerBM1.context;
+	var ctx1 = laserTrailBM.context;
 
 	laserLayerBM1.clear();
+	laserTrailBM.clear();
+
 	//laserLayerBM1.clearRect(0,0,game.world.width,game.world.height);
 	//laserLayerBM1.setStrokeStyle(laserWidth);
 	ctx.strokeStyle = '#ff0000';
 	ctx.lineWidth = laserWidth;
 	ctx.beginPath();
+
+	ctx1.strokeStyle = '#ffffff';
+	ctx1.globalAlpha = 0.2;
+	ctx1.lineWidth = laserTrailWidth;
+	ctx1.beginPath();
 
 	var lx0,ly0;
 
@@ -1363,8 +1400,11 @@ function drawLaserFrom( x0, y0 ) {
 	ly0 = y0;
 
 	var isReflectingBack = false;
+	var laserPath = []; // an array of xyPoints
 
 	ctx.moveTo(lx0,ly0);
+	ctx1.moveTo(lx0,ly0);
+	laserPath.push( {x:lx0,y:ly0} );
 
 	// calcuatedLineSegmentInfo = calcLineSegment(shooterDirection(),lx0,ly0);
 	// laserLayerBM1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
@@ -1391,6 +1431,9 @@ function drawLaserFrom( x0, y0 ) {
 		calcuatedLineSegmentInfo = calcLineSegment(laserDirection,lx0,ly0);
 
 		ctx.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
+		ctx1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
+		laserPath.push( {x:calcuatedLineSegmentInfo.x1, y:calcuatedLineSegmentInfo.y1} );
+
 		if ( calcuatedLineSegmentInfo.spriteCollide ) {
 			spriteCollideArr.push( calcuatedLineSegmentInfo.spriteCollide );
 		}
@@ -1432,6 +1475,7 @@ function drawLaserFrom( x0, y0 ) {
 	//laserLayerBM1.closePath();
 
 	ctx.stroke();
+	ctx1.stroke();
 
 	//laserLayerBM1.fillStyle('#f00');
 	//laserLayerBM1.fill();
@@ -1442,7 +1486,7 @@ function drawLaserFrom( x0, y0 ) {
 
 	console.log("drawLaserFrom: OUT isReflectingBack="+isReflectingBack);
 
-	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, hitScore:hitScore, prizeArr:prizeArr, spriteCollideArr:spriteCollideArr};
+	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, hitScore:hitScore, prizeArr:prizeArr, spriteCollideArr:spriteCollideArr, laserPath:laserPath};
 }
 
 function touchListenerOnUp() {

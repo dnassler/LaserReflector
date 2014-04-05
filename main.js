@@ -1388,7 +1388,7 @@ function drawLaserFrom( x0, y0 ) {
 	ctx.beginPath();
 
 	ctx1.strokeStyle = '#ffffff';
-	ctx1.globalAlpha = 0.2;
+	ctx1.globalAlpha = 1;
 	ctx1.lineWidth = laserTrailWidth;
 	ctx1.beginPath();
 

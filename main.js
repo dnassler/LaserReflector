@@ -206,16 +206,18 @@ game_state.main.prototype = {
 		game.load.image('laser1', "assets/laserTexture1.png");
 
 		game.load.image('greenBox', "assets/greenBox.png");
-		game.load.image('greenBox10', "assets/greenBox10.png");
-		game.load.image('greenBox10time', "assets/greenBox10time.png");
 
 		game.load.image('textMinus25', "assets/textMinus25.png");
 
 		game.load.spritesheet('fireButton', 'assets/buttons/FireButton2Frames.png',200,200);
 		game.load.spritesheet('helpButton', 'assets/buttons/HelpButtonFrames.png',100,100);
 
-		var urlDataSpritesheet1 = createSpritesheetTimeBomb(); //creates frames
-		game.load.spritesheet('timeBomb', urlDataSpritesheet1, gridSize, gridSize);
+		game.load.spritesheet('timeBomb', createSpritesheetTimeBomb(), gridSize, gridSize);
+
+		game.load.spritesheet('greenBox10', createSpritesheetPrize10Points(), gridSize, gridSize);
+		game.load.spritesheet('greenBox10time', createSpritesheetPrize10Seconds(), gridSize, gridSize);
+		// game.load.image('greenBox10', "assets/greenBox10.png");
+		// game.load.image('greenBox10time', "assets/greenBox10time.png");
 
 		// ==
 		// sounds...
@@ -396,11 +398,15 @@ game_state.main.prototype = {
 			var r;
 			if ( i === 0 ) {
 				r = prizeGroup.add( createGameElement("greenBox10", false, false) );
+				r.animations.add("basic", null, 1, true);
+				r.play("basic");
 				r.prizePoints = 10;
 				r.timeMarkerMove = game.time.now + Math.random()*5000 + 1000;
 				specialPrizesArr.push( r );
 			} else if ( i === 1 ) {
 				r = prizeGroup.add( createGameElement("greenBox10time", false, false) );
+				r.animations.add("basic", null, 1, true);
+				r.play("basic");
 				r.prizePoints = 0;
 				r.prizeTimeOffset = 10;
 				r.timeMarkerMove = game.time.now + Math.random()*5000 + 1000;
@@ -1138,7 +1144,7 @@ function gameLevelTimeout() {
 	gameOver = true;
 	shooterDead = true; // shooter is considered "dead" unless it is alive
 
-	removeAllTimeBombEvents();
+	removeAndKillAllTimeBombEvents();
 
 	if ( gameLevelTimerEvent ) {
 			game.time.events.remove(gameLevelTimerEvent);
@@ -1193,7 +1199,7 @@ function isShowingIntroInfo() {
 function restartGame() {
 
 	gameOver = false;
-	removeAllTimeBombEvents();
+	removeAndKillAllTimeBombEvents();
 	scrambleAllObjects();
 
 	introInfoGroup.visible = false;
@@ -1255,7 +1261,7 @@ function restartLevel() {
 	var isDownOrIsUp = [90,270];
 	var movingLeftOrRight = [-defShooterVelocity, defShooterVelocity];
 	
-	removeAllTimeBombEvents();
+	removeAndKillAllTimeBombEvents();
 
 	saveShooterVelocityX = null;
 	saveShooterVelocityY = null;
@@ -2296,6 +2302,103 @@ function setShooterAngle( angle ) {
 	//shooter1.body.rotation = Phaser.Math.degToRad(angle);
 }
 
+// ===
+
+// -- create special prize box
+
+function createSpritesheetPrize10Points() {
+	var fw = gridSize;
+	var fh = gridSize;
+	var pw = prizeWidth;
+	var ph = prizeWidth;
+
+	var bmd = game.add.bitmapData( fw * 4, fh );
+	var ctx = bmd.context;
+
+	ctx.fillStyle = "#2E8B57"; //seagreen
+	ctx.translate(fw/2,fh/2);
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	// ctx.fillStyle = "#FFFFFF";
+	// ctx.fillRect(-pw/2,-ph/2,pw,ph/2);
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#2E8B57"; //seagreen
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	// ctx.fillStyle = "#FFFFFF";
+	// ctx.fillRect(-pw/2,-ph/2,pw,ph/2);
+	ctx.strokeStyle = "#FFFFFF";
+	ctx.lineWidth = 5;
+	ctx.strokeRect(-pw/2-5,-pw/2-5, pw+10,pw+10);
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#2E8B57"; //seagreen
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	// ctx.fillStyle = "#FFFFFF";
+	// ctx.fillRect(-pw/2,-ph/2,pw,ph/2);
+	ctx.strokeStyle = "#FFFFFF";
+	ctx.lineWidth = 5;
+	ctx.strokeRect(-pw/2-10,-pw/2-10, pw+20,pw+20);
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#2E8B57"; //seagreen
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	// ctx.fillStyle = "#FFFFFF";
+	// ctx.fillRect(-pw/2,-ph/2,pw,ph/2);
+	ctx.strokeStyle = "#FFFFFF";
+	ctx.lineWidth = 5;
+	ctx.strokeRect(-pw/2-15,-pw/2-15, pw+30,pw+30);
+
+	return bmd.canvas.toDataURL();
+}
+
+function createSpritesheetPrize10Seconds() {
+	var fw = gridSize;
+	var fh = gridSize;
+	var pw = prizeWidth;
+	var ph = prizeWidth;
+
+	var bmd = game.add.bitmapData( fw * 4, fh );
+	var ctx = bmd.context;
+
+	ctx.fillStyle = "#2E8B57"; //seagreen
+	ctx.translate(fw/2,fh/2);
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	ctx.fillStyle = "#FFFFFF";
+	ctx.fillRect(-pw/2,-ph/2,pw/2,ph);
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#2E8B57"; //seagreen
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	ctx.fillStyle = "#FFFFFF";
+	ctx.fillRect(-pw/2,-ph/2,pw/2,ph);
+	ctx.strokeStyle = "#FFFFFF";
+	ctx.lineWidth = 5;
+	ctx.strokeRect(-pw/2-5,-pw/2-5, pw+10,pw+10);
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#2E8B57"; //seagreen
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	ctx.fillStyle = "#FFFFFF";
+	ctx.fillRect(-pw/2,-ph/2,pw/2,ph);
+	ctx.strokeStyle = "#FFFFFF";
+	ctx.lineWidth = 5;
+	ctx.strokeRect(-pw/2-10,-pw/2-10, pw+20,pw+20);
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#2E8B57"; //seagreen
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	ctx.fillStyle = "#FFFFFF";
+	ctx.fillRect(-pw/2,-ph/2,pw/2,ph);
+	ctx.strokeStyle = "#FFFFFF";
+	ctx.lineWidth = 5;
+	ctx.strokeRect(-pw/2-15,-pw/2-15, pw+30,pw+30);
+
+	return bmd.canvas.toDataURL();
+}
+
+// ===
+// -- time bomb related...
+
 function createSpritesheetTimeBomb() {
 	// create bitmap data 
 	var width = gridSize;
@@ -2425,6 +2528,7 @@ function launchTimeBomb() {
 				timeBombSprite.wasHit = false;
 		});
 	audioTimeBombLaunched.play();
+	timeBombSprite.play('arm1');
 	//timeBombSprite.alpha = 0.1;
 	setTimeBombEvent( timeBombSprite, "arm1" );
 }
@@ -2455,101 +2559,100 @@ function destroyedTimeBomb( timeBombSprite ) {
 function fadeOutAllTimeBombs() {
 	game.add.tween(timeBombGroup).to({alpha:0}, 1000, Phaser.Easing.None, true)
 		.onComplete.add( function () {
-			removeAllTimeBombEvents();
+			removeAndKillAllTimeBombEvents();
 			timeBombGroup.alpha = 1;
 		});
 	// game.add.tween(timeBombTextGroup).to({alpha:0}, 1000, Phaser.Easing.None, true)
 	// 	.onComplete.add( function () {
-	// 		//removeAllTimeBombEvents();
+	// 		//removeAndKillAllTimeBombEvents();
 	// 		timeBombTextGroup.alpha = 1;
 	// 	});	
 }
-function removeAllTimeBombEvents() {
-	var timerInfo = null;
-	var spriteId;
-	for ( spriteId in timeBombTimerInfo ) {
-		timerInfo = timeBombTimerInfo[spriteId];
-		if ( timerInfo ) {
-			removeTimeBombEvent( timerInfo.timeBombSprite );
-			if ( timerInfo.timeBombSprite.textMinus25Sprite ) {
-				timerInfo.timeBombSprite.textMinus25Sprite.kill();
-				timerInfo.timeBombSprite.textMinus25Sprite = null;
-			}			
-			timerInfo.timeBombSprite.kill();
+
+function removeAndKillAllTimeBombEvents() {
+	var sprite, shapeId;
+	for ( shapeId in Object.keys(timeBombTimerInfo) ) {
+		sprite = timeBombTimerInfo[shapeId];
+		if ( sprite ) {
+			removeTimeBombEvent( sprite );
+			sprite.kill();
 		}
+		timeBombTimerInfo[shapeId] = null;
 	}
-	console.log("*** removeAllTimeBombEvents");
+	console.log("*** removeAndKillAllTimeBombEvents");
 }
-// function debugTimeBombEvents() {
-// 	console.log("\n\n\ndebugTimeBombEvents");
-// 	var timeBombInfo = null;
-// 	for ( spriteId in timeBombTimerInfo ) {
-// 		console.log("timeBombSpriteId="+spriteId);
-// 		timeBombInfo = timeBombTimerInfo[spriteId];
-// 		if ( timeBombInfo ) removeTimeBombEvent( timeBombInfo.timeBombSprite );
-// 	}
-// 	console.log("-------------------------\n\n\n");
-// }
+
 function removeTimeBombEvent( timeBombSprite ) {
-	console.log("removeTimeBombEvent: bombId="+timeBombSprite.shapeId);
-	var timerInfo = timeBombTimerInfo[timeBombSprite.shapeId];
-	if ( timerInfo ) {
-		//timerInfo.timeBombSprite.kill();
-		game.time.events.remove( timerInfo.eventHandle );
+	if ( timeBombSprite.timeBombEvent ) {
+		if ( timeBombSprite.timeBombEventType !== "explode" ) {
+			// do not remove this event because and explode event is the thing that cleans up the explosion after it exploded
+			// and that event callback will not trigger further callbacks
+			game.time.events.remove( timeBombSprite.timeBombEvent );
+		}
+		timeBombSprite.timeBombEvent = null;
+		timeBombSprite.timeBombEventType = null;
 		timeBombTimerInfo[timeBombSprite.shapeId] = null;
+		timeBombSprite.textMinus25Sprite = null;
 	}
 }
 function setTimeBombEvent( timeBombSprite, eventType ) {
-	var timerInfo = timeBombTimerInfo[timeBombSprite.shapeId];
-	if ( timerInfo ) {
-		game.time.events.remove( timerInfo.eventHandle );
-	} else {
-		timerInfo = {};
-		timeBombTimerInfo[timeBombSprite.shapeId] = timerInfo;
-	}
-	timerInfo.eventType = eventType;
-	timerInfo.timeBombSprite = timeBombSprite;
+	removeTimeBombEvent( timeBombSprite );
+	var timeInterval;
 	if ( eventType === "arm1" ) {
-		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+",  ARM1");
-		timeBombSprite.play('arm1');
-		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*15, function(){timeBombArm1Callback(timeBombSprite);}, this );
+		timeInterval = 15;
 	} else if ( eventType === "arm2" ) {
-		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", ARM2");
+		timeInterval = 5;
+	} else if ( eventType === "arm3" ) {
+		timeInterval = 2;
+	} else {
+		// eventType === "explode"
+		timeInterval = 2;
+	}
+	timeBombSprite.timeBombEvent = game.time.events.add( 
+		Phaser.Timer.SECOND*timeInterval, 
+		function () {
+			timeBombEventCB(timeBombSprite, eventType);
+		}, 
+		this);
+	timeBombSprite.timeBombEventType = eventType;
+	timeBombTimerInfo[timeBombSprite.shapeId] = timeBombSprite;
+
+	console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+",  eventType="+eventType);
+}
+
+function timeBombEventCB( timeBombSprite, eventType ) {
+	if ( eventType === "arm1" ) {
 		timeBombSprite.play('arm2');
-		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*5, function(){timeBombArm2Callback(timeBombSprite);}, this );
-	} else if ( eventType === "arm3") {
+		setTimeBombEvent( timeBombSprite, "arm2" );
+	} else if ( eventType === "arm2" ) {
 		timeBombSprite.play('arm3');
 		audioTimeBombArm3.play();
-		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", ARM3");
-		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*2, function(){timeBombArm3Callback(timeBombSprite);}, this );
-	} else {
+		setTimeBombEvent( timeBombSprite, "arm3" );
+	} else if ( eventType === "arm3" ) {
+		// start the explode sequence if not already hit
+		// ***maybe at the moment that the laser hits the timebomb is when the timebomb event should be removed
+		//    in case the wasHit flag is changed before this callback is invoked
+		if ( timeBombSprite.wasHit ) {
+			// must have been hit with the laser just before it was about to explode
+			removeTimeBombEvent( timeBombSprite ); // should be unnecessary
+			return;
+		}
+		timeBombSprite.wasHit = true; // so that the shooter my not hit this while it is exploding
+		gameLevelTimer -= 25; //Math.floor(gameLevelTimer - gameLevelTimer/4);
+		if ( gameLevelTimer < 0 ) {
+			gameLevelTimer = 0;
+		}
 		timeBombSprite.play('explode');
 		audioTimeBombExplode.play();
-		console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+", EXPLODE");
-		timerInfo.eventHandle = game.time.events.add( Phaser.Timer.SECOND*2, function(){timeBombExplodeCallback(timeBombSprite);}, this );
+		setTimeBombEvent( timeBombSprite, "explode" );
+	} else {
+		// eventType === "explode"
+		timeBombExplodeCallback( timeBombSprite );
 	}
 }
 
-function timeBombArm1Callback( timeBombSprite ) {
-	//console.log("timeBombArm1Callback");
-	setTimeBombEvent( timeBombSprite, "arm2" );
-}
-function timeBombArm2Callback( timeBombSprite ) {
-	//console.log("timeBombArm2Callback");
-	setTimeBombEvent( timeBombSprite, "arm3" );
-}
-function timeBombArm3Callback( timeBombSprite ) {
-	//console.log("timeBombArm3Callback");
-
-	timeBombSprite.wasHit = true; // so that the shooter my not hit this while it is exploding
-	gameLevelTimer -= 25; //Math.floor(gameLevelTimer - gameLevelTimer/4);
-	if ( gameLevelTimer < 0 ) {
-		gameLevelTimer = 0;
-	}
-	setTimeBombEvent( timeBombSprite, "explode" );
-}
 function timeBombExplodeCallback( timeBombSprite ) {
-	removeTimeBombEvent( timeBombSprite ); // should be unnecessary
+	removeTimeBombEvent( timeBombSprite );
 	
 	var textMinus25 = timeBombTextGroup.getFirstDead();
 	textMinus25.alpha = 1;
@@ -2565,6 +2668,7 @@ function timeBombExplodeCallback( timeBombSprite ) {
 			timeBombSprite.kill();
 		});
 }
+
 
 // finally
 game.state.add('main', game_state.main);

@@ -1403,7 +1403,6 @@ function drawLaserFrom( x0, y0 ) {
 	var laserPath = []; // an array of xyPoints
 
 	ctx.moveTo(lx0,ly0);
-	ctx1.moveTo(lx0,ly0);
 	laserPath.push( {x:lx0,y:ly0} );
 
 	// calcuatedLineSegmentInfo = calcLineSegment(shooterDirection(),lx0,ly0);
@@ -1431,7 +1430,24 @@ function drawLaserFrom( x0, y0 ) {
 		calcuatedLineSegmentInfo = calcLineSegment(laserDirection,lx0,ly0);
 
 		ctx.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
-		ctx1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
+		if ( numLaserBounces === 0 ) {
+
+			ctx1.save();
+			var gradient = ctx1.createLinearGradient(lx0,ly0,calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
+			gradient.addColorStop(0,"#000");
+			gradient.addColorStop(1,"#fff");
+			ctx1.strokeStyle = gradient;
+			ctx1.moveTo(lx0,ly0);
+			ctx1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
+			ctx1.stroke();
+			ctx1.restore();
+			ctx1.beginPath();
+			ctx1.moveTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
+
+		} else {
+			ctx1.lineTo(calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
+
+		}
 		laserPath.push( {x:calcuatedLineSegmentInfo.x1, y:calcuatedLineSegmentInfo.y1} );
 
 		if ( calcuatedLineSegmentInfo.spriteCollide ) {

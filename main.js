@@ -97,7 +97,7 @@ var blankSpaceBufferX = gridSize, blankSpaceBufferY = gridSize;
 
 var cursors;
 
-var clickedOnSprite;
+//var clickedOnSprite;
 
 var laserFiring = false;
 var saveShooterVelocityX=0, saveShooterVelocityY=0;
@@ -365,16 +365,30 @@ game_state.main.prototype = {
 		reflectorGroup1 = game.add.group();
 		triangleGroupArr = [];
 		for (var i=0; i<15; i++) {
-			var r = reflectorGroup1.add( createGameElement("triangleReflector1", true, true) );
+			var r = createGameElement("triangleReflector1", true);
+			reflectorGroup1.add( r );
+
+			r.inputEnabled = true;
+			//shape.input.start(0,true);
+			r.input.enableDrag();
+			//shape.input.enableSnap(50,50,false,true );
+			r.events.onDragStart.add(function(s) { 
+				s.saveShapeOriginalPositionX = s.x;
+				s.saveShapeOriginalPositionY = s.y;
+				s.isReflectorBeingDragged = true;
+			});
+			r.events.onDragStop.add(fixSnapLocationReflector);	
+
+			//r.events.onInputUp.add(clickOnTriangleReflectorListener, this);	
 			triangleGroupArr.push( r );
 			allGridObjectsArr.push( r );
 		}
 		boxReflectorArr = [];
 		for (var i=0; i<5; i++) {
-			var r = reflectorGroup1.add( createGameElement("boxReflector1"), false, false, 0 );
-			//if ( i<2 ) {
-			//	r.animations.add('flashSafeMode',[0,1,2], 1, true).play();
-			//}
+			var r = createGameElement("boxReflector1", false, 0 );
+			reflectorGroup1.add( r );
+			r.inputEnabled = true;
+			r.events.onInputDown.add(clickOnBoxReflectorListener, this);	
 			r.animations.add('safeMode',[2,1], 1, false); // this is to be played when the user clicks on it
 			r.animations.add('flashRed',[3,4], 4, true); // this is to be play'ed when hit with the laser
 			r.events.onAnimationComplete.add(function (r) {
@@ -397,14 +411,14 @@ game_state.main.prototype = {
 			// do not allow the greenBox to be dragged
 			var r;
 			if ( i === 0 ) {
-				r = prizeGroup.add( createGameElement("greenBox10", false, false) );
+				r = prizeGroup.add( createGameElement("greenBox10") );
 				r.animations.add("basic", null, 1, true);
 				r.play("basic");
 				r.prizePoints = 10;
 				r.timeMarkerMove = game.time.now + Math.random()*5000 + 1000;
 				specialPrizesArr.push( r );
 			} else if ( i === 1 ) {
-				r = prizeGroup.add( createGameElement("greenBox10time", false, false) );
+				r = prizeGroup.add( createGameElement("greenBox10time") );
 				r.animations.add("basic", null, 1, true);
 				r.play("basic");
 				r.prizePoints = 0;
@@ -412,7 +426,7 @@ game_state.main.prototype = {
 				r.timeMarkerMove = game.time.now + Math.random()*5000 + 1000;
 				specialPrizesArr.push( r );
 			} else {
-				r = prizeGroup.add( createGameElement("greenBox", false, false) );
+				r = prizeGroup.add( createGameElement("greenBox") );
 				r.prizePoints = 1;
 				basicPrizeGroupArr.push( r );
 			}
@@ -808,7 +822,7 @@ function fullscreenKeyPressed() {
 		game.scale.startFullScreen();
 }
 
-function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
+function createGameElement( shapeName, canRotate, frameNum ) {
 	
 	//console.log("in createGameElement");
 
@@ -835,18 +849,17 @@ function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
 	//shape.body.linearDamping = 0.1;
 
 	//shape.inputEnabled = true;
-	if ( canDrag ) {
-		shape.inputEnabled = true;
-		//shape.input.start(0,true);
-		shape.input.enableDrag();
-		//shape.input.enableSnap(50,50,false,true );
-		shape.events.onDragStart.add(function(s) { 
-			s.saveShapeOriginalPositionX = s.x;
-			s.saveShapeOriginalPositionY = s.y;
-		});
-		shape.events.onDragStop.add(fixSnapLocationReflector);	
-		shape.events.onInputDown.add(clickOnReflectorListener, this);	
-	}
+	// if ( canDrag ) {
+	// 	shape.inputEnabled = true;
+	// 	//shape.input.start(0,true);
+	// 	shape.input.enableDrag();
+	// 	//shape.input.enableSnap(50,50,false,true );
+	// 	shape.events.onDragStart.add(function(s) { 
+	// 		s.saveShapeOriginalPositionX = s.x;
+	// 		s.saveShapeOriginalPositionY = s.y;
+	// 	});
+	// 	shape.events.onDragStop.add(fixSnapLocationReflector);	
+	// }
 
 
 	shape.name = shapeName;
@@ -855,7 +868,8 @@ function createGameElement( shapeName, canRotate, canDrag, frameNum ) {
 }
 
 function fixSnapLocationReflector( reflectorSprite ) {
-	
+	// this function is called when a triangle that is being dragged is "dropped"
+	reflectorSprite.isReflectorBeingDragged = false;
 	var toXY = snapToShapeGrid( {x:reflectorSprite.x, y:reflectorSprite.y} );
 	var toX = toXY.x;
 	var toY = toXY.y;
@@ -865,6 +879,12 @@ function fixSnapLocationReflector( reflectorSprite ) {
 		reflectorSprite.y = reflectorSprite.saveShapeOriginalPositionY;
 		return;
 	}
+
+	if ( toX === reflectorSprite.saveShapeOriginalPositionX && toY === reflectorSprite.saveShapeOriginalPositionY ) {
+		// if ( sprite.angle == Phaser.Math.snapToFloor(sprite.angle, 90) ) {
+		rotateTriangleReflector(reflectorSprite, false);
+	}
+
 
 	// var toX = Phaser.Math.snapToFloor( reflectorSprite.x, gridSize ) + halfGridSize + extraWidth/2;
 	// var toY = Phaser.Math.snapToFloor( reflectorSprite.y, gridSize ) + halfGridSize + extraHeight/2;
@@ -1447,8 +1467,8 @@ function clickListener() {
 	}
 
 	// console.log("clickListener: input.x="+game.input.x+", input.y="+game.input.y);
-	var sp = snapToShapeGrid( {x:game.input.x,y:game.input.y} );
-	console.log("clickListener: snapped to x="+sp.x+", y="+sp.y);
+	// var sp = snapToShapeGrid( {x:game.input.x,y:game.input.y} );
+	// console.log("clickListener: snapped to x="+sp.x+", y="+sp.y);
 
 	// if ( game.input.y > bottomLimitY - shapeWidth/2 ) {
 	// 	// only fire the button if the surface was touched at the bottom of the screen
@@ -1456,7 +1476,7 @@ function clickListener() {
 	// 	return;
 	// }
 
-	var r = hasShapeAt({x:game.input.x, y:game.input.y});
+	// var r = hasShapeAt({x:game.input.x, y:game.input.y});
 
 	// if ( r ) {
 	// 	// console.log("clickListener: hasShapeAt returned a shape: shapeName="+r.name+", r.x="+r.x+", r.y="+r.y);
@@ -1475,19 +1495,19 @@ function clickListener() {
 	// // 	} );
 	// }
 
-	if ( r ) {
-		if ( isShapeTriangle(r) ) {
-			// make sure that the triangle isn't in the process of rotating
-			console.log("clickListener: clicked on triangle");
-			if ( r.angle == Phaser.Math.snapToFloor(r.angle, 90) ) {
-				rotateTriangleReflector(r, false);
-			} else {
-				console.log("clickListener: the triangle is rotating!!!!!!! Ignoring the click!")
-			}
-		} else if ( r.name == "boxReflector1" ) {
-			r.play("safeMode");
-		}
-	}
+	// if ( r ) {
+	// 	if ( isShapeTriangle(r) ) {
+	// 		// make sure that the triangle isn't in the process of rotating
+	// 		console.log("clickListener: clicked on triangle");
+	// 		if ( r.angle == Phaser.Math.snapToFloor(r.angle, 90) ) {
+	// 			rotateTriangleReflector(r, false);
+	// 		} else {
+	// 			console.log("clickListener: the triangle is rotating!!!!!!! Ignoring the click!")
+	// 		}
+	// 	} else if ( r.name == "boxReflector1" ) {
+	// 		r.play("safeMode");
+	// 	}
+	// }
 	console.log("clickListener: OUT\n\n\n");
 }
 
@@ -1620,6 +1640,12 @@ function lineFromDirectionAndXY( direction, x, y ) {
 
 function isShapeTriangle( shape ) {
 	if ( shape.name == "triangleReflector1" ) {
+		return true;
+	}
+	return false;
+}
+function isShapeBoxReflector( shape ) {
+	if ( shape.name === "boxReflector1" ) {
 		return true;
 	}
 	return false;
@@ -1938,11 +1964,20 @@ function shooterDirection() {
 	//console.log("shooterDirection shooter1.angle="+a+", d="+d);
 	return d;
 }
-
-function clickOnReflectorListener(sprite,pointer) {
-	//console.log("sprite.name="+sprite.name)
-	//console.log("sprite.x="+sprite.x+", y="+sprite.y);
-	clickedOnSprite = sprite;
+// function clickOnTriangleReflectorListener(sprite,pointer) {
+// 	console.log("clickOnTriangleReflectorListener: isReflectorBeingDragged="+sprite.isReflectorBeingDragged);
+// 	if ( sprite.isReflectorBeingDragged ) {
+// 		console.log("clickOnTriangleReflectorListener: the triangle is being dragged!!!!!!! Ignoring the click!")
+// 		return;
+// 	}
+// 	if ( sprite.angle == Phaser.Math.snapToFloor(sprite.angle, 90) ) {
+// 		rotateTriangleReflector(sprite, false);
+// 	} else {
+// 		console.log("clickOnTriangleReflectorListener: the triangle is rotating!!!!!!! Ignoring the click!")
+// 	}
+// }
+function clickOnBoxReflectorListener(sprite,pointer) {
+	sprite.play("safeMode");
 }
 
 function reorientShooterAsNecessary() {

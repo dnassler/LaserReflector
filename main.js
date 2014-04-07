@@ -1036,11 +1036,17 @@ function fireButtonPressed() {
 
 	if ( r.isReflectingBack ) {
 		console.log("adding timer event");
+		if ( r.numLaserBounces > 3 ) {
+			showBonusInfo("That's Unfortunate!",2000);
+		}
 		laserTimerEvent = game.time.events.loop(100, laserTimerEventCallback, this);
 		if ( debug != 1 ) totalHealthShooter -= 1;
 	}
 	if ( r.prizeArr.length > 0 ) {
 
+		if ( r.numLaserBounces > 2 && r.hitScore > 5 ) {
+			showBonusInfo("Nice shot!",2000)
+		}
 		//timeToLaunchTimeBomb = game.time.now + 6000;
 
 		// play sound!
@@ -2709,17 +2715,17 @@ function laserHitAllRedBoxes() {
 	game.time.events.add(1500, function(){
 		hideRedBoxPrizes();
 		timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
-		setTextCenter(bonusText,"+100 POINTS!");
-		showBonusInfo();
+		showBonusInfo("+100 POINTS!");
 		continueRegularGamePlay();
 	}, this);
 
 }
 
-function showBonusInfo() {
+function showBonusInfo(txt, duration) {
+	setTextCenter(bonusText, txt);
 	bonusInfoGroup.visible = true;
 	bonusInfoGroup.alpha = 1;
-	game.add.tween(bonusInfoGroup).to({alpha:0}, 1000, Phaser.Easing.Linear.None, true)
+	game.add.tween(bonusInfoGroup).to({alpha:0}, duration ? duration : 1000, Phaser.Easing.Linear.None, true)
 		.onComplete.add( function(){ 
 			bonusInfoGroup.visible = false; 
 		} );

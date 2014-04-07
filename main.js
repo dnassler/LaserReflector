@@ -1486,6 +1486,7 @@ function drawLaserFrom( x0, y0 ) {
 			ctx1.save();
 			var gradient = ctx1.createLinearGradient(lx0,ly0,calcuatedLineSegmentInfo.x1, calcuatedLineSegmentInfo.y1);
 			gradient.addColorStop(0,"#000");
+			gradient.addColorStop(0.5,"#fff");
 			gradient.addColorStop(1,"#fff");
 			ctx1.strokeStyle = gradient;
 			ctx1.moveTo(lx0,ly0);

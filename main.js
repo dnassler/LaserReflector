@@ -167,6 +167,8 @@ var redBoxArr = [];
 
 var stopLaserFiringTimerHandle;
 
+var savedGameTime = 0;
+
 window.addEventListener('resize', function(event){
 	resizeGame();
 });
@@ -453,10 +455,13 @@ game_state.main.prototype = {
 		redBoxGroup = game.add.group();
 		for ( var i=0; i<3; i++ ) {
 			var r = createGameElement("redBox").kill();
+			r.prizePoints = 1;
 			redBoxGroup.add( r );
 			redBoxArr.push( r );
 			allGridObjectsArr.push( r );
 		}
+		timeMarkerShowRedBoxes = game.time.now + 30000;
+
 		// ===
 
 		// create time bomb game element
@@ -583,6 +588,12 @@ game_state.main.prototype = {
     gameHelpButton = game.add.button(game.world.width-100,game.world.height-100, "helpButton", null, this, 0,0,2,0, gameOverlayTextGroup);
     gameHelpButton.onInputDown.add( helpButtonCallback );
 
+    bonusInfoGroup = game.add.group();
+    bonusText = game.add.bitmapText(game.world.centerX, game.world.centerY, "pressStart2P", "", 50 );
+    bonusText.align = "center";
+    bonusInfoGroup.add( bonusText );
+    bonusInfoGroup.visible = false;
+
     gameStartingText = game.add.bitmapText( game.world.centerX, game.world.centerY, "pressStart2P", "", 50 );
     //gameStartingText.anchor.setTo(0.5,0.5);
 		gameStartingText.align = "center";
@@ -708,10 +719,19 @@ game_state.main.prototype = {
 		
 		reorientShooterAsNecessary();
 
-		if ( game.time.now > timeMarkerUpdateBgTextGroup ) {
-			if ( shooterXYText ) shooterXYText.setText( shooter1.x +"\n" + shooter1.y );
-			timeMarkerUpdateBgTextGroup = game.time.now + 1000;
+		if ( savedGameTime !== 0 ) {
+			// this means that we are in a special mode such that the usual updates should not occur
+			//TODO: when saveGameTime is reset to 0 and regular game play continues then perhaps all 
+			//      of the timeMarkers should be updated with the interval difference between the
+			//      saveGameTime and game.time.now ... otherwise all of the time markers may fire at
+			//      the point that regular play continues
+			return;
 		}
+
+		// if ( game.time.now > timeMarkerUpdateBgTextGroup ) {
+		// 	if ( shooterXYText ) shooterXYText.setText( shooter1.x +"\n" + shooter1.y );
+		// 	timeMarkerUpdateBgTextGroup = game.time.now + 1000;
+		// }
 
 		if ( game.time.now > timeMarkerMoveBlueSquares ) {
 			updateObjectPositions( boxReflectorArr );
@@ -807,11 +827,12 @@ function helpButtonCallback() {
 }
 
 function updateGameLevelTimer() {
-	console.log("updateGameLevelTimer: IN");
+	//console.log("updateGameLevelTimer: IN");
 	if ( gameOver ) return;
+	if ( savedGameTime !== 0 ) return;
 	if ( debug == 1 ) return;
 
-	console.log("updateGameLevelTimer...");
+	//console.log("updateGameLevelTimer...");
 	gameLevelTimer -= 1;
 	if ( gameLevelTimer < 0 ) {
 		gameLevelTimer = 0;
@@ -1030,7 +1051,6 @@ function fireButtonPressed() {
 
 		// check r.prizeArr to see if redBoxes were hit and if so check if they were ALL hit
 		// because if they were not ALL hit then none of them will disappear
-		// <<<<2
 		var countRedBoxInPrizeArr = 0;
 		var allRedBoxesHit = false;
 		r.prizeArr.forEach(function(p){
@@ -1038,12 +1058,22 @@ function fireButtonPressed() {
 				countRedBoxInPrizeArr += 1;
 			}
 		});
-		if ( redBoxArr.length === countRedBoxInPrizeArr ) {
+		if ( countRedBoxInPrizeArr > 0 && redBoxGroup.countLiving() === countRedBoxInPrizeArr ) {
 			allRedBoxesHit = true;
-			game.time.events.add(Phaser.Timer.SECOND, 
-				function () {
-					destroyedAllRedBoxes();
-				}, this);
+
+			redBoxGroup.forEachAlive(function(p){
+				game.add.tween(p.scale)
+					.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 20, true)
+					.onComplete.add(function(){p.scale.setTo(1,1)});
+			});			
+
+			laserHitAllRedBoxes();
+
+			return;
+			// game.time.events.add(200, 
+			// 	function () {
+			// 		laserHitAllRedBoxes();
+			// 	}, this);
 		}
 
 		r.prizeArr.forEach(function(p) {
@@ -1052,6 +1082,13 @@ function fireButtonPressed() {
 			// 		.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true)
 			// 		.to({x:1,y:1}, 100, Phaser.Easing.Linear.None, true, 0)
 			// 		.loop() );
+
+			// if ( p.name === "redBox" &&  allRedBoxesHit ) {
+			// 	// skip processing of redBox prizes when all of them were hit
+			// 	// because there is special processing (above) done to them
+			// 	// in this case...
+			// 	return;
+			// }
 
 			// flash the prizes that were hit by the laser!
 			game.add.tween(p.scale)
@@ -1350,7 +1387,7 @@ function restartGame() {
 		timeMarkerMoveTimeBomb = game.time.now + 1000;
 		timeToLaunchTimeBomb = game.time.now + timeBombIntervalNextBombLaunch();
 		timeMarkerTweakTriangles = game.time.now + 2000;
-		timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
+		timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxesAfterGameStart();
 		
 	}, this);
 
@@ -1685,6 +1722,7 @@ function collectPrizesOnLine( d, x0, y0, x1, y1 ) {
 		}
 	});
 	redBoxGroup.forEach(function (prize) {
+		console.log("collectPrizesOnLine: redBoxGroup prize.shapeId="+prize.shapeId+", prize.alive="+prize.alive);
 		if ( prize.alive && !prize.wasHit && isPrizeOnLine( prize, d, x0, y0, x1, y1 ) ) {
 			console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
 			prizeArr.push( prize );
@@ -2245,7 +2283,9 @@ function findShapesAt( x, y ) {
 }
 
 function updateSingleObjectPosition( b ) {
-
+	if ( !b.alive ) {
+		return;
+	}
 	var adjacentSpots = getFreeAdjacentLocations(b.x,b.y);
 	if ( adjacentSpots.length == 0 ) return;
 
@@ -2287,6 +2327,7 @@ function updateSingleObjectPosition( b ) {
 // this function mischeiviously changes the locations of some or all of the deadly blue squares
 function updateObjectPositions( objectsToMoveArr, allAlive ) {
 	if ( debug!==0 ) return;
+	//if ( savedGameTime !== 0 ) return;
 	if ( allAlive ) {
 		objectsToMoveArr.forEach( function(s) {
 			if ( s.alive && !s.wasHit ) {
@@ -2574,13 +2615,28 @@ function createSpritesheetPrizeUnlockChallenge1() {
 	return bmd.canvas.toDataURL();
 }
 
+function timeToShowRedBoxesAfterGameStart() {
+	return timeToShowRedBoxes()
+}
 function timeToShowRedBoxes() {
-	return 1000;//game.rnd.integerInRange(30000, 45000);
+	return game.rnd.integerInRange(20000, 30000);
 }
 
 function showRedBoxPrizes() {
-	redBoxArr.forEach( function(p) {
-
+	if ( isShowingRedBoxes() ) {
+		console.log("showRedBoxPrizes: already showing boxes so ignore request to show them now");
+		return;
+	}
+	var p;
+	var numOfBoxesToShow = 3;
+	var pCount = 0;
+	//while ( pCount < numOfBoxesToShow ) {
+	//	p = redBoxGroup.getFirstDead();
+	redBoxGroup.forEach( function(p) {
+		if ( pCount >= numOfBoxesToShow ) {
+			return; //no need to add more
+		}
+		pCount += 1;
 		var point = findEmptyGridLocation();
 		p.alpha = 0;
 		p.scale.setTo(6,6);
@@ -2592,18 +2648,20 @@ function showRedBoxPrizes() {
 					p.wasHit = false;
 					p.alpha = 1;
 			});
-
-	});
+		}, this );
 }
 
 function hideRedBoxPrizes() {
 	// TODO: should we worry about the case where the red boxes were hit or partially hit with the laser already? <<<<2
 	redBoxArr.forEach( function(p) {
+		console.log("hideRedBoxPrizes: p.shapeId="+p.shapeId);
 		p.wasHit = true;
+		p.alive = false;
 		game.add.tween(p).to({alpha:0},500, Phaser.Easing.None, true)
 			.onComplete.add( function() {
 				p.wasHit = false;
 				p.kill();
+				console.log("hideRedBoxPrizes: onComplete p.shapeId="+p.shapeId);
 			});
 	});
 	
@@ -2616,9 +2674,86 @@ function isShowingRedBoxes() {
 	return false;
 }
 
-function destroyedAllRedBoxes() {
-	// this should trigger the event that is to occur when all the red boxes were hit with a single laser blast
-	// ... maybe this should trigger a special game play mode where a challenge is presented
+function laserHitAllRedBoxes() {
+	//TODO: maybe this should trigger a special game play mode where a challenge is presented
+	
+	totalPrizeHits += 100; // woo hoo!
+	setTextRight( scoreText, totalPrizeHits.toString() );
+
+	savedGameTime = game.time.now;
+
+	removeAndKillAllTimeBombEvents();
+
+	reflectorGroup1.forEachAlive(function(b) {
+		b.alive = false;
+		game.add.tween(b.scale).to({x:0,y:0}, 500, Phaser.Easing.Linear.None, true)
+			.yoyo(true).repeat(3)
+			.onComplete.add( function() {
+				// b.visible = false;
+				// b.scale.setTo(0,0);
+			} );
+	}, this);
+	prizeGroup.forEachAlive(function(b) {
+		b.alive = false;
+		game.add.tween(b.scale).to({x:0,y:0}, 500, Phaser.Easing.Linear.None, true)
+			.yoyo(true).repeat(3)
+			.onComplete.add( function() {
+				// b.visible = false;
+				// b.scale.setTo(0,0);
+			} );
+	}, this);
+	
+	// game.time.events.add(1500, function(){
+	// 	savedGameTime=0;
+	// }, this);
+	game.time.events.add(1500, function(){
+		hideRedBoxPrizes();
+		timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
+		setTextCenter(bonusText,"+100 POINTS!");
+		showBonusInfo();
+		continueRegularGamePlay();
+	}, this);
+
+}
+
+function showBonusInfo() {
+	bonusInfoGroup.visible = true;
+	bonusInfoGroup.alpha = 1;
+	game.add.tween(bonusInfoGroup).to({alpha:0}, 1000, Phaser.Easing.Linear.None, true)
+		.onComplete.add( function(){ 
+			bonusInfoGroup.visible = false; 
+		} );
+}
+
+function continueRegularGamePlay() {
+	console.log("\n\n\n\n*******continueRegularGamePlay*********\n\n\n\n");
+	reflectorGroup1.forEachDead(function(b) {
+		b.visible = true;
+		b.alive = true;
+		// game.add.tween(b.scale).to({x:1,y:1}, 1000, Phaser.Easing.Linear.None, true)
+		// 	.onComplete.add( function(){ b.alive = true; });
+	});
+	prizeGroup.forEachDead(function(b) {
+		b.visible = true;
+		b.alive = true;
+		// game.add.tween(b.scale).to({x:1,y:1}, 1000, Phaser.Easing.Linear.None, true)
+		// 	.onComplete.add( function(){ b.alive = true; } );
+	});
+	game.time.events.add(2000, function(){
+		restoreTimeMarkers();
+		savedGameTime=0;
+	}, this);
+}
+
+function restoreTimeMarkers() {
+	var haltedTimeInterval = game.time.now - savedGameTime;
+	timeMarkerMoveBlueSquares = game.time.now + haltedTimeInterval;
+	timeMarkerMovePrizes = game.time.now + haltedTimeInterval;
+	timeMarkerShowRedBoxes = game.time.now + haltedTimeInterval;
+	timeMarkerHideRedBoxes = game.time.now + haltedTimeInterval;
+	timeMarkerMoveTimeBomb = game.time.now + haltedTimeInterval;
+	timeMarkerTweakTriangles = game.time.now + haltedTimeInterval;
+	timeToLaunchTimeBomb = game.time.now + haltedTimeInterval;
 }
 
 // ===
@@ -2730,6 +2865,7 @@ function timeBombAliveArr() {
 
 function launchTimeBomb() {
 	if ( gameOver || shooterDead ) return;
+	//if ( savedGameTime !== 0 ) return;
 	console.log("launchTimeBomb?");
 	if ( timeBombGroup.countLiving() >= maxSimultaneousTimeBombs() ) {
 		console.log("too many time bombs in play based on time remaining so skip launch");
@@ -2795,16 +2931,20 @@ function fadeOutAllTimeBombs() {
 }
 
 function removeAndKillAllTimeBombEvents() {
+	console.log("removeAndKillAllTimeBombEvents: IN");
 	var sprite, shapeId;
-	for ( shapeId in Object.keys(timeBombTimerInfo) ) {
+	//var shapeId in timeBombTimerInfo
+	for ( var shapeId in timeBombTimerInfo ) {
+		console.log("timeBomb.shapeId="+shapeId);
 		sprite = timeBombTimerInfo[shapeId];
 		if ( sprite ) {
+			console.log("about to remove time bomb event for shapeId="+shapeId);
 			removeTimeBombEvent( sprite );
 			sprite.kill();
 		}
 		timeBombTimerInfo[shapeId] = null;
 	}
-	console.log("*** removeAndKillAllTimeBombEvents");
+	console.log("removeAndKillAllTimeBombEvents: OUT");
 }
 
 function removeTimeBombEvent( timeBombSprite ) {
@@ -2842,10 +2982,21 @@ function setTimeBombEvent( timeBombSprite, eventType ) {
 	timeBombSprite.timeBombEventType = eventType;
 	timeBombTimerInfo[timeBombSprite.shapeId] = timeBombSprite;
 
+	// for debugging
+	// if ( debug === 20140407 ) {
+	// 	for ( var shapeId in timeBombTimerInfo ) {
+	// 		console.log("timeBomb.shapeId="+shapeId);
+	// 		if ( timeBombTimerInfo[shapeId] ) {
+	// 			console.log("timeBombTimerInfo["+shapeId+"].shapeId="+timeBombTimerInfo[shapeId].shapeId);
+	// 		}
+	// 	}
+	// }
+
 	console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+",  eventType="+eventType);
 }
 
 function timeBombEventCB( timeBombSprite, eventType ) {
+	timeBombSprite.timeBombEvent = null;
 	if ( eventType === "arm1" ) {
 		timeBombSprite.play('arm2');
 		setTimeBombEvent( timeBombSprite, "arm2" );
@@ -2877,6 +3028,7 @@ function timeBombEventCB( timeBombSprite, eventType ) {
 }
 
 function timeBombExplodeCallback( timeBombSprite ) {
+	timeBombSprite.timeBombEvent = null;
 	removeTimeBombEvent( timeBombSprite );
 	
 	var textMinus25 = timeBombTextGroup.getFirstDead();

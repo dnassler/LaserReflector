@@ -73,6 +73,8 @@ var timeMarkerMovePrizes = 0;
 var timeMarkerMoveTimeBomb = 0;
 var timeMarkerTweakTriangles = 0;
 var timeMarkerGameOver = 0;
+var timeMarkerShowRedBoxes = 0;
+var timeMarkerHideRedBoxes = 0;
 
 var maxGameLevelTime = 99;
 var maxHealthShooter = 5;
@@ -157,6 +159,9 @@ var timeBombTextGroup;
 
 var timeBombTimerInfo = {};
 
+var redBoxGroup;
+var redBoxArr = [];
+
 // var explosionBM;
 // var explosionSprite;
 
@@ -223,6 +228,8 @@ game_state.main.prototype = {
 
 		game.load.spritesheet('greenBox10', createSpritesheetPrize10Points(), gridSize, gridSize);
 		game.load.spritesheet('greenBox10time', createSpritesheetPrize10Seconds(), gridSize, gridSize);
+
+		game.load.image('redBox', createSpritesheetPrizeUnlockChallenge1() );
 		// game.load.image('greenBox10', "assets/greenBox10.png");
 		// game.load.image('greenBox10time', "assets/greenBox10time.png");
 
@@ -442,6 +449,14 @@ game_state.main.prototype = {
 			allGridObjectsArr.push( r );
 		}
 		prizeHitTweenArr = [];
+
+		redBoxGroup = game.add.group();
+		for ( var i=0; i<3; i++ ) {
+			var r = createGameElement("redBox").kill();
+			redBoxGroup.add( r );
+			redBoxArr.push( r );
+			allGridObjectsArr.push( r );
+		}
 		// ===
 
 		// create time bomb game element
@@ -516,13 +531,13 @@ game_state.main.prototype = {
 		// laserLayerBM1 = game.add.bitmapData(game.world.width, game.world.height);
 		// laserTextureSprite1 = game.add.sprite(0,0,laserLayerBM1);
 
-		laserLayerBM1 = game.add.bitmapData(game.world.width,game.world.height);
-		laserLayerSprite1 = game.add.sprite(0,0,laserLayerBM1);
-		laserLayerSprite1.visible = false;
-
 		laserTrailBM = game.add.bitmapData(game.world.width,game.world.height);
 		laserTrailSprite = game.add.sprite(0,0,laserTrailBM);
 		laserTrailSprite.visible = false;
+
+		laserLayerBM1 = game.add.bitmapData(game.world.width,game.world.height);
+		laserLayerSprite1 = game.add.sprite(0,0,laserLayerBM1);
+		laserLayerSprite1.visible = false;
 
 		fireButtonSprite = game.add.button(game.world.width-200,game.world.height-200, "fireButton", null, this, 0,0,1,0);
 		fireButtonSprite.onInputDown.add(fireButtonPressed);
@@ -706,6 +721,15 @@ game_state.main.prototype = {
 		if ( game.time.now > timeMarkerMovePrizes ) {
 			updateObjectPositions( basicPrizeGroupArr );
 			timeMarkerMovePrizes = game.time.now + Math.random()*5000 + 5000;
+		}
+
+		if ( !isShowingRedBoxes() && game.time.now > timeMarkerShowRedBoxes ) {
+			showRedBoxPrizes();
+			timeMarkerHideRedBoxes = game.time.now + 30000;
+		}
+		if ( isShowingRedBoxes() && game.time.now > timeMarkerHideRedBoxes ) {
+			hideRedBoxPrizes();
+			timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
 		}
 
 		if ( timeBombAliveCount() > 0 && game.time.now > timeMarkerMoveTimeBomb ) {
@@ -1004,13 +1028,35 @@ function fireButtonPressed() {
 		// game.add.tween(b)
 		// 	.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
 
+		// check r.prizeArr to see if redBoxes were hit and if so check if they were ALL hit
+		// because if they were not ALL hit then none of them will disappear
+		// <<<<2
+		var countRedBoxInPrizeArr = 0;
+		var allRedBoxesHit = false;
+		r.prizeArr.forEach(function(p){
+			if ( p.name === "redBox" ) {
+				countRedBoxInPrizeArr += 1;
+			}
+		});
+		if ( redBoxArr.length === countRedBoxInPrizeArr ) {
+			allRedBoxesHit = true;
+			game.time.events.add(Phaser.Timer.SECOND, 
+				function () {
+					destroyedAllRedBoxes();
+				}, this);
+		}
+
 		r.prizeArr.forEach(function(p) {
 			// prizeHitTweenArr.push( 
 			// 	game.add.tween(p.scale)
 			// 		.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true)
 			// 		.to({x:1,y:1}, 100, Phaser.Easing.Linear.None, true, 0)
 			// 		.loop() );
-			
+
+			// flash the prizes that were hit by the laser!
+			game.add.tween(p.scale)
+				.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true);
+
 			// increase the game time for each prize hit
 			if ( p.prizeTimeOffset ) {
 				gameLevelTimer += p.prizeTimeOffset;
@@ -1018,17 +1064,21 @@ function fireButtonPressed() {
 				gameLevelTimer += extraGameTimePerPrize;
 			}
 
-			// flash the prizes that were hit by the laser!
+			// if ( p.name === "redBox" && !allRedBoxesHit ) {
+			// 	// since all not all red boxes were hit with one laser blast
+			// 	// then none of them are considered "hit" and so none of them
+			// 	// should be killed
+			// 	return;
+			// }
+
 			p.wasHit = true;
 
-			game.add.tween(p.scale)
-				.to({x:2,y:2}, 100, Phaser.Easing.Linear.None, true, 0, 5, true);
 			game.add.tween(p)
 				.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
 				.onComplete.add( function () {
 					p.wasHit = false;
 					p.scale.setTo(1,1); // sometimes this is called too early and the scale is reset by the above tween
-					if ( p.name === "greenBox" || p.name === "greenBox10" || p.name === "greenBox10time" ) {
+					if ( p.name === "greenBox" || p.name === "greenBox10" || p.name === "greenBox10time" || p.name === "redBox" ) {
 						var point = findEmptyGridLocation();
 						p.x = point.x;
 						p.y = point.y;
@@ -1300,6 +1350,7 @@ function restartGame() {
 		timeMarkerMoveTimeBomb = game.time.now + 1000;
 		timeToLaunchTimeBomb = game.time.now + timeBombIntervalNextBombLaunch();
 		timeMarkerTweakTriangles = game.time.now + 2000;
+		timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
 		
 	}, this);
 
@@ -1458,7 +1509,16 @@ function drawLaserFrom( x0, y0 ) {
 		prizeArr = prizeArr.concat( calcuatedLineSegmentInfo.prizeArr );
 		//hitScore += calcuatedLineSegmentInfo.prizeArr.length * (numLaserBounces+1);
 		prizePointsForSegment = 0;
-		calcuatedLineSegmentInfo.prizeArr.forEach(function(p){ prizePointsForSegment += p.prizePoints; });
+
+		calcuatedLineSegmentInfo.prizeArr.forEach(function(p){
+			var prizePoints = 0;
+			if ( p.prizePoints ) {
+				prizePoints = p.prizePoints;
+			} else {
+				prizePoints = 0;
+			}
+			prizePointsForSegment += prizePoints;
+		});
 		if ( debug == 20140404 ) {
 			console.log("drawLaserFrom: prizePointsForSegment="+prizePointsForSegment);
 		}
@@ -1618,6 +1678,12 @@ function collectPrizesOnLine( d, x0, y0, x1, y1 ) {
 	// 		}
 	console.log("collectPrizesOnLine: IN");
 	prizeGroup.forEach(function (prize) {
+		if ( prize.alive && !prize.wasHit && isPrizeOnLine( prize, d, x0, y0, x1, y1 ) ) {
+			console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
+			prizeArr.push( prize );
+		}
+	});
+	redBoxGroup.forEach(function (prize) {
 		if ( prize.alive && !prize.wasHit && isPrizeOnLine( prize, d, x0, y0, x1, y1 ) ) {
 			console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
 			prizeArr.push( prize );
@@ -2489,6 +2555,69 @@ function createSpritesheetPrize10Seconds() {
 	ctx.strokeRect(-pw/2-15,-pw/2-15, pw+30,pw+30);
 
 	return bmd.canvas.toDataURL();
+}
+
+function createSpritesheetPrizeUnlockChallenge1() {
+	var fw = gridSize;
+	var fh = gridSize;
+	var pw = prizeWidth;
+	var ph = prizeWidth;
+
+	var bmd = game.add.bitmapData( fw, fh );
+	var ctx = bmd.context;
+
+	ctx.fillStyle = "#B22222"; //firebrick
+	ctx.translate(fw/2,fh/2);
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+
+	return bmd.canvas.toDataURL();
+}
+
+function timeToShowRedBoxes() {
+	return 1000;//game.rnd.integerInRange(30000, 45000);
+}
+
+function showRedBoxPrizes() {
+	redBoxArr.forEach( function(p) {
+
+		var point = findEmptyGridLocation();
+		p.alpha = 0;
+		p.scale.setTo(6,6);
+		p.wasHit = true; // so that the laser cannot hit it when it is in the process of appearing
+		p.reset( point.x, point.y );
+		game.add.tween(p).to({alpha:1}, 500, Phaser.Easing.None, true);
+		game.add.tween(p.scale).to({x:1,y:1}, 500, Phaser.Easing.None, true)
+			.onComplete.add( function() {
+					p.wasHit = false;
+					p.alpha = 1;
+			});
+
+	});
+}
+
+function hideRedBoxPrizes() {
+	// TODO: should we worry about the case where the red boxes were hit or partially hit with the laser already? <<<<2
+	redBoxArr.forEach( function(p) {
+		p.wasHit = true;
+		game.add.tween(p).to({alpha:0},500, Phaser.Easing.None, true)
+			.onComplete.add( function() {
+				p.wasHit = false;
+				p.kill();
+			});
+	});
+	
+}
+
+function isShowingRedBoxes() {
+	if ( redBoxGroup.countLiving() > 0 ) {
+		return true;
+	}
+	return false;
+}
+
+function destroyedAllRedBoxes() {
+	// this should trigger the event that is to occur when all the red boxes were hit with a single laser blast
+	// ... maybe this should trigger a special game play mode where a challenge is presented
 }
 
 // ===

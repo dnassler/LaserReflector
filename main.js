@@ -254,6 +254,8 @@ game_state.main.prototype = {
 		game.load.audio('timeBombLaunched', 'assets/audio/Powerup19.mp3');
 		game.load.audio('timeBombArm3', 'assets/audio/Pickup_Coin34.mp3');
 
+		game.load.audio('redBoxesHit', 'assets/audio/Pickup_Coin60b.mp3');
+
 		game.load.bitmapFont('pressStart2P','assets/fonts/Press_Start_2P/font.png', 'assets/fonts/Press_Start_2P/font.xml');
 
 	},
@@ -314,6 +316,8 @@ game_state.main.prototype = {
 		audioTimeBombExplode = game.add.audio('timeBombExplode',1,false);
 		audioTimeBombLaunched = game.add.audio('timeBombLaunched',0.5,false);
 		audioTimeBombArm3 = game.add.audio('timeBombArm3',0.5,false);
+
+		audioRedBoxesHit = game.add.audio('redBoxesHit',0.75,false);
 		// ==
 
 		cursors = game.input.keyboard.createCursorKeys();
@@ -547,6 +551,7 @@ game_state.main.prototype = {
 		fireButtonSprite = game.add.button(game.world.width-200,game.world.height-200, "fireButton", null, this, 0,0,1,0);
 		fireButtonSprite.onInputDown.add(fireButtonPressed);
 		fireButtonSprite.onInputUp.add(fireButtonReleased);
+		//fireButtonSprite.visible = false;
 
 		shooter1 = game.add.sprite(game.world.centerX, halfGridSize, "shooter1");
 		game.physics.enable(shooter1, Phaser.Physics.ARCADE);
@@ -554,7 +559,7 @@ game_state.main.prototype = {
 		shooter1.visible = false;
 
 		gameplayObjectsGroup = game.add.group();
-		gameplayObjectsGroup.add( fireButtonSprite );
+		// gameplayObjectsGroup.add( fireButtonSprite );
 		gameplayObjectsGroup.visible = false;
 
 		// scale the blocks/triangles/shooter appropriately
@@ -585,7 +590,7 @@ game_state.main.prototype = {
     //gameOverlayText.anchor.set(0.5,0);
     gameOverlayText.align = "center";
     gameOverlayTextGroup.add( gameOverlayText );
-    gameHelpButton = game.add.button(game.world.width-100,game.world.height-100, "helpButton", null, this, 0,0,2,0, gameOverlayTextGroup);
+    gameHelpButton = game.add.button(game.world.width-100,game.world.height-300, "helpButton", null, this, 0,0,2,0, gameOverlayTextGroup);
     gameHelpButton.onInputDown.add( helpButtonCallback );
 
     bonusInfoGroup = game.add.group();
@@ -704,7 +709,7 @@ game_state.main.prototype = {
     		+ "lazor.reflektor@gmail.com\n"
     		, true, true);
     	//gameOverlayText.setText("LAZOR REFLEKTOR!!!\n\n\n\nGAME OVER\n\ntouch or press spacebar\nto start");
-    	setTextCenter( gameOverlayText, "LAZOR REFLEKTOR!!!\n\n\n\nGAME OVER\n\ntouch or press spacebar\nto start");
+    	setTextCenter( gameOverlayText, "LAZOR REFLEKTOR!!!\n\n\n\nGAME OVER\n\ntouch screen\nto start");
     	//showIntroInfo();
     }, this);
 
@@ -1034,19 +1039,30 @@ function fireButtonPressed() {
 	laserLayerSprite1.visible = true;
 	laserLayerSprite1.alpha = 1;
 
+	// determine what, if any message to display to the player
+	// NOTE that these messages might be overridden by messages a little further below
+	// in the logic that processes the details of the prizes that were hit
 	if ( r.isReflectingBack ) {
-		console.log("adding timer event");
 		if ( r.numLaserBounces > 3 ) {
+			var msgArr = ["That's Unfortunate!", "You Can Win Them All!", "Ouch!!!", "Oh Well!"];
 			showBonusInfo("That's Unfortunate!",2000);
+		} else if ( r.numLaserBounces === 0 ) {
+			var msgArr = ["Try Harder!", "Were You Even Looking?", "Come On!", "Are You Sleeping OK?"];
+			showBonusInfo(game.rnd.pick(msgArr), 3000);
 		}
+	} else {
+		if ( r.numLaserBounces > 2 && r.hitScore > 5 ) {
+			showBonusInfo("Nice shot!",2000);
+		}
+	}
+
+	// ==
+
+	if ( r.isReflectingBack ) {
 		laserTimerEvent = game.time.events.loop(100, laserTimerEventCallback, this);
 		if ( debug != 1 ) totalHealthShooter -= 1;
 	}
 	if ( r.prizeArr.length > 0 ) {
-
-		if ( r.numLaserBounces > 2 && r.hitScore > 5 ) {
-			showBonusInfo("Nice shot!",2000)
-		}
 		//timeToLaunchTimeBomb = game.time.now + 6000;
 
 		// play sound!
@@ -1066,6 +1082,10 @@ function fireButtonPressed() {
 		});
 		if ( countRedBoxInPrizeArr > 0 && redBoxGroup.countLiving() === countRedBoxInPrizeArr ) {
 			allRedBoxesHit = true;
+
+			audioRedBoxesHit.play();
+
+			showBonusInfo("Oh Good!",2000);
 
 			redBoxGroup.forEachAlive(function(p){
 				game.add.tween(p.scale)
@@ -1164,52 +1184,30 @@ function fireButtonPressed() {
 	//scoreText.setText( totalPrizeHits.toString() );
 	setTextRight( scoreText, totalPrizeHits.toString() );
 
+	stopLaserFiringTimerHandle = game.time.events.add(200, stopFiringLaserCallback, this);
+
 	if ( r.isReflectingBack ) {
 		var d = shooterDirection();
 		if ( d.isUp || d.isDown ) {
-			game.add.tween(shooter1)
-				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { x: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.onComplete.add( shooterDies, this );
+			var tween1 = game.add.tween(shooter1)
+				.to( { x: shooter1.x+10 }, 50, Phaser.Easing.Linear.None, false)
+				.chain( game.add.tween(shooter1).to( {x: shooter1.x-10 }, 50, Phaser.Easing.Linear.None, false) )
+				.repeat(9)
+				.chain( game.add.tween(shooter1).to( {x: shooter1.x}, 25, Phaser.Easing.Linear.None, false) );
+			//tween1.onComplete.add( shooterDies, this );
+			tween1.start();
 		} else {
-			game.add.tween(shooter1)
-				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '-10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.to( { y: '+10' }, 50, Phaser.Easing.Linear.None, true, 0, 0, true)
-				.onComplete.add( shooterDies, this );
+			var tween1 = game.add.tween(shooter1)
+				.to( { y: shooter1.y+10 }, 50, Phaser.Easing.Linear.None, false)
+				.chain( game.add.tween(shooter1).to( {y: shooter1.y-10 }, 50, Phaser.Easing.Linear.None, false) )
+				.repeat(9)
+				.chain( game.add.tween(shooter1).to( {y: shooter1.y}, 25, Phaser.Easing.Linear.None, false) );
+			//tween1.onComplete.add( shooterDies, this );
+			tween1.start();
 		}
+		audioShooterDies.play();
+		shooterDies();
 	}
-
-	stopLaserFiringTimerHandle = game.time.events.add(200, stopFiringLaserCallback, this);
 
 }
 
@@ -1266,20 +1264,24 @@ function stopFiringLaserCallback() {
 }
 
 function shooterDies() {
+	console.log("shooterDies: IN");
   //game.add.tween(shooter1).to( { scale: 0 }, 2000, Phaser.Easing.Linear.None, true);
   shooterDead = true;
   fireButtonReleased();
   fadeOutAllTimeBombs();
+  shooter1.body.velocity.setTo( 0, 0 );
 	game.add.tween(shooter1).to( { alpha: 0 }, 2000, Phaser.Easing.Linear.None, true, 500);
 	if ( totalHealthShooter > 0 ) {
 		// play sound of shooter dying (but not yet dead)
-		audioShooterDies.play();
+		//audioShooterDies.play();
 		game.time.events.add(3000, restartLevel, this);
 	} else {
 		// play sound of shooter dying (game over)
-		audioShooterDies.play();
-		gameLevelTimeout();
+		//audioShooterDies.play();
+		game.time.events.add(1000, gameLevelTimeout, this);
+		//gameLevelTimeout();
 	}
+	console.log("shooterDies: OUT");
 }
 
 function gameLevelTimeout() {
@@ -1292,7 +1294,6 @@ function gameLevelTimeout() {
 			game.time.events.remove(gameLevelTimerEvent);
 			gameLevelTimerEvent = null;
 	}
-	shooter1.visible = false;
 
 	console.log("************** GAME OVER *****************");
 	// calculate final score based on the number of hits combined with the shooter health
@@ -1302,6 +1303,7 @@ function gameLevelTimeout() {
 	game.add.tween(finalScoreText).to({y:game.world.centerY}, 1000, Phaser.Easing.Back.Out, true);
 	
 	game.time.events.add(Phaser.Timer.SECOND*2, function () {
+		shooter1.visible = false;
 		gameOverlayTextGroup.visible = true;
 		gameplayObjectsGroup.visible = false;
 	}, this);
@@ -1317,6 +1319,7 @@ function showIntroInfo() {
 	console.log("showIntroInfo: IN");
 	gameOverlayTextGroup.visible = false;
 	introInfoGroup.visible = true;
+	gameHelpButton.visible = false;
 	finalScoreText.visible = false;
 	hideIntroInfoTimer = game.time.events.add(Phaser.Timer.SECOND * 60, hideIntroInfo, this);
 }
@@ -1330,6 +1333,7 @@ function hideIntroInfo() {
 	}
 	gameOverlayTextGroup.visible = true;
 	introInfoGroup.visible = false;
+	gameHelpButton.visible = true;
 	gameOverlayTextGroup.visible = true;
 	//game.time.events.add(Phaser.Timer.SECOND * 10, showIntroInfo, this);
 }
@@ -1622,9 +1626,9 @@ function clickListener() {
 		if ( isShowingIntroInfo() ) {
 			hideIntroInfo();
 		} else {
-			// clicking anywhere (above the help button) on the surface will start the game
-			if (game.input.y < game.world.height-100) {
-						fireButtonPressed();
+			// clicking anywhere (not including the help button) on the surface will start the game
+			if (!((game.input.y > game.world.height-300 && game.input.y < game.world.height-200) && game.input.x > game.world.width-100)) {
+				fireButtonPressed();
 			}
 		}
 		
@@ -2722,6 +2726,7 @@ function laserHitAllRedBoxes() {
 }
 
 function showBonusInfo(txt, duration) {
+	console.log("showBonusInfo: txt=",txt);
 	setTextCenter(bonusText, txt);
 	bonusInfoGroup.visible = true;
 	bonusInfoGroup.alpha = 1;
@@ -2897,6 +2902,9 @@ function launchTimeBomb() {
 	audioTimeBombLaunched.play();
 	timeBombSprite.play('arm1');
 	//timeBombSprite.alpha = 0.1;
+	if ( timeBombGroup.countLiving() >= 4 && gameLevelTimer < 100 ) {
+		showBonusInfo("Time Bomb ALERT!", 2000);
+	}
 	setTimeBombEvent( timeBombSprite, "arm1" );
 }
 

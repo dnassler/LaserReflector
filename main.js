@@ -169,6 +169,10 @@ var stopLaserFiringTimerHandle;
 
 var savedGameTime = 0;
 
+var msgDieHardArr = ["That's Unfortunate!", "You Can Win Them All!", "Ouch!!!", "Oh Well!"];
+var msgDieEasyArr = ["Try Harder!", "Were You Even Looking?", "Come On!", "Are You Sleeping OK?"];
+
+
 window.addEventListener('resize', function(event){
 	resizeGame();
 });
@@ -1045,12 +1049,10 @@ function fireButtonPressed() {
 	// NOTE that these messages might be overridden by messages a little further below
 	// in the logic that processes the details of the prizes that were hit
 	if ( r.isReflectingBack ) {
-		if ( r.numLaserBounces > 3 ) {
-			var msgArr = ["That's Unfortunate!", "You Can Win Them All!", "Ouch!!!", "Oh Well!"];
-			showBonusInfo("That's Unfortunate!",2000);
+		if ( r.numLaserBounces >= 3 ) {
+			showBonusInfo(game.rnd.pick(msgDieHardArr), 3000);
 		} else if ( r.numLaserBounces === 0 ) {
-			var msgArr = ["Try Harder!", "Were You Even Looking?", "Come On!", "Are You Sleeping OK?"];
-			showBonusInfo(game.rnd.pick(msgArr), 3000);
+			showBonusInfo(game.rnd.pick(msgDieEasyArr), 3000);
 		}
 	} else {
 		if ( r.numLaserBounces > 2 && r.hitScore > 5 ) {

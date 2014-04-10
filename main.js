@@ -169,7 +169,7 @@ var stopLaserFiringTimerHandle;
 
 var savedGameTime = 0;
 
-var msgDieHardArr = ["That's Unfortunate!", "You Can Win Them All!", "Ouch!!!", "Oh Well!"];
+var msgDieHardArr = ["That's Unfortunate!", "You Can't Win Them All!", "Ouch!!!", "Oh Well!"];
 var msgDieEasyArr = ["Try Harder!", "Were You Even Looking?", "Come On!", "Are You Sleeping OK?"];
 
 

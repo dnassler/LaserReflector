@@ -75,6 +75,9 @@ var timeMarkerTweakTriangles = 0;
 var timeMarkerGameOver = 0;
 var timeMarkerShowRedBoxes = 0;
 var timeMarkerHideRedBoxes = 0;
+var timeMarkerShuffleBlueReflectors = 0;
+var timeMarkerShuffleAllReflectors = 0;
+var timeMarkerCheckIfLaserFiredRecently = 0;
 
 var maxGameLevelTime = 99;
 var maxHealthShooter = 5;
@@ -168,10 +171,22 @@ var redBoxArr = [];
 var stopLaserFiringTimerHandle;
 
 var savedGameTime = 0;
+var savedGameTimeAtLastRestartLevel = 0;
+var savedGameTimeAtLastPrizeHit = 0;
+var savedGameTimeAtLastLaserFiring = 0;
+var savedPrizeHitCountPerShotArr = [];
+var savedPrizeHitScorePerSuccessfulShotArr = [];
 
 var msgDieHardArr = ["That's Unfortunate!", "You Can't Win Them All!", "Ouch!!!", "Oh Well!"];
-var msgDieEasyArr = ["Try Harder!", "Were You Even Looking?", "Come On!", "Are You Sleeping OK?"];
-
+var msgDieEasyArr = ["Try Harder!", "Were You Even Looking?", "Come On!", "Are You Sleeping OK?", "Don't You Care?"];
+var msgDieEasyWithPrize = ["Are You Distracted?", "Look Beyond Your Target!", "Be Careful!"];
+var msgDieEasyWithTimeBomb = ["I Guess You Meant To Do That!", "Sacrificed A Life!", "So Sad!"]
+var msgDie1BounceWithPrizeArr = ["You Should Have Seen That Coming!", "Be More Careful!", "You're Silly!","Was It Worth It?"];
+var msgDie1BounceWithoutPrizeArr = ["You Can Do Better!", "Look Further Ahead!", "Don't Be Silly!"];
+var msgEasyLowHits = ["Go For More!", "Go Big Or Go Home!", "Use A Little More Effort!", "Why Not Be Daring?", "Take A Risk!"];
+var msgRiskyGood = ["Risky Shooting But I Like!", "Interesting!", "Bravo!", "Pretty Good!", "Good Stuff!"];
+var msg2BouncesOkay = ["That Was O.K.", "Not Bad, My Friend", "I See A Good Future For You", "I'm Liking Your Style.", "I See Skill"];
+var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Don't Worry, It's Just A Game", "Relax But Act!", "Fire That Laser!", "Don't Just Be An Observer", "Take Action.", "Don't Be So Passive."];
 
 window.addEventListener('resize', function(event){
 	resizeGame();
@@ -743,8 +758,16 @@ game_state.main.prototype = {
 		// 	if ( shooterXYText ) shooterXYText.setText( shooter1.x +"\n" + shooter1.y );
 		// 	timeMarkerUpdateBgTextGroup = game.time.now + 1000;
 		// }
+		if ( timeMarkerShuffleAllReflectors > 0 && game.time.now > timeMarkerShuffleAllReflectors ) {
+			timeMarkerShuffleAllReflectors = game.time.now + 60000;
+			shuffleAllReflectors();
+			return;
+		}
 
-		if ( game.time.now > timeMarkerMoveBlueSquares ) {
+		if ( game.time.now > timeMarkerShuffleBlueReflectors ) {
+			updateObjectPositions( boxReflectorArr, true ); // all should move
+			timeMarkerShuffleBlueReflectors = game.time.now + Math.random()*5000 + 25000;
+		} else if ( game.time.now > timeMarkerMoveBlueSquares ) {
 			updateObjectPositions( boxReflectorArr );
 			timeMarkerMoveBlueSquares = game.time.now + Math.random()*5000 + 5000;
 		}
@@ -785,6 +808,11 @@ game_state.main.prototype = {
 		if ( game.time.now > timeToLaunchTimeBomb ) {
 			launchTimeBomb();
 			timeToLaunchTimeBomb = game.time.now + timeBombIntervalNextBombLaunch();
+		}
+
+		if ( timeMarkerCheckIfLaserFiredRecently !== 0 && game.time.now > timeMarkerCheckIfLaserFiredRecently ) {
+			timeMarkerCheckIfLaserFiredRecently = game.time.now + Math.random()*3000 + 3000;
+			showBonusInfo( game.rnd.pick(msgNoShotsRecently), 2000);
 		}
 
 		//texture.render(laserLayer1, position, true); //the last arg specifies to clear or not
@@ -869,6 +897,7 @@ function updateGameLevelTimer() {
 			timerTextTween.stop();
 		}
 	}
+
 }
 
 function rotateTriangleReflector( r, randomRotate ) {
@@ -1020,6 +1049,8 @@ function fireButtonPressed() {
 	console.log("fireButtonPressed: shooter must not be dead. shooterDead="+shooterDead);
 
 	laserFiring = true;
+	savedGameTimeAtLastLaserFiring = game.time.now;
+	timeMarkerCheckIfLaserFiredRecently = game.time.now + Math.random()*3000 + 5000;
 
 	// play sound!
 	audioLaserFired.play();
@@ -1048,16 +1079,82 @@ function fireButtonPressed() {
 	// determine what, if any message to display to the player
 	// NOTE that these messages might be overridden by messages a little further below
 	// in the logic that processes the details of the prizes that were hit
+	// save it for play stats and intelligent commentary
+	
+	savedPrizeHitCountPerShotArr.push( r.prizeArr.length );
+
+	var avgHitCountForLastFewShots = avgHitCount( 4 ); //check avg for the last 4 laser firings
+	var avgHitScoreForLastFewShots = avgHitScore( 4 ); //check avg score increment for the last 4 laser shots with hits
+	var timeSinceLastFiring = game.time.now - savedGameTimeAtLastLaserFiring;
+	var numPrizesHit = r.prizeArr.length;
+	var countTimeBombPrizeHit = 0;
+
+	if ( numPrizesHit > 0 ) {
+
+		r.prizeArr.forEach(function(p){
+			if ( p.name === "timeBomb" ) {
+				countTimeBombPrizeHit += 1;
+			}
+		});
+
+		savedPrizeHitScorePerSuccessfulShotArr.push( r.hitScore );
+
+	}
+
 	if ( r.isReflectingBack ) {
+
 		if ( r.numLaserBounces >= 3 ) {
 			showBonusInfo(game.rnd.pick(msgDieHardArr), 3000);
 		} else if ( r.numLaserBounces === 0 ) {
-			showBonusInfo(game.rnd.pick(msgDieEasyArr), 3000);
+			if ( numPrizesHit === 0 ) {
+				showBonusInfo(game.rnd.pick(msgDieEasyArr), 3000);
+			} else {
+				if ( countTimeBombPrizeHit >= 1 ) {
+					showBonusInfo(game.rnd.pick(msgDieEasyWithTimeBomb), 3000);
+				} else {
+					showBonusInfo(game.rnd.pick(msgDieEasyWithPrize), 3000);
+				}
+			}
+		} else if ( r.numLaserBounces === 1 ) {
+			if ( numPrizesHit > 0 ) {
+				showBonusInfo(game.rnd.pick(msgDie1BounceWithPrizeArr), 3000);
+			} else {
+				showBonusInfo(game.rnd.pick(msgDie1BounceWithoutPrizeArr), 3000);
+			}
 		}
+
 	} else {
-		if ( r.numLaserBounces > 2 && r.hitScore > 5 ) {
-			showBonusInfo("Nice shot!",2000);
+
+		// not reflecting back
+		if ( r.numLaserBounces >= 3 && r.hitScore > 5 ) {
+			showBonusInfo("Really Nice shot!",2000); // overrides possibly some above commentary
+		} else if ( r.numLaserBounces >=3 && r.hitScore > 1 ) {
+			showBonusInfo("Cool.", 2000);
+		} else if ( r.numLaserBounces >= 2 && r.hitScore > 3) {
+			showBonusInfo(game.rnd.pick(msgRiskyGood), 3000);
+		} else if ( r.numLaserBounces >= 2 && r.hitScore > 0 ) {
+			showBonusInfo(game.rnd.pick(msg2BouncesOkay), 3000);
+		} else if ( r.numLaserBounces >= 3 ) {
+			showBonusInfo("Reflecting Lasers Are Fun!", 3000);
+		} else if ( numPrizesHit === 0 ) {
+			if ( savedPrizeHitCountPerShotArr.length > 4 ) {
+				if ( avgHitCountForLastFewShots === 0 ) {
+					if ( timeSinceLastFiring < 1000 ) {
+						showBonusInfo("Having Fun?", 2000);
+					} else if ( timeSinceLastFiring < 5000 ) {
+						showBonusInfo("Try Harder, Won't You?",3000);
+					}
+				} else if ( avgHitCountForLastFewShots >= 1 ) {
+					//showBonusInfo("Cool Your Jets!", 2000);
+				}
+			}
+		} else if ( savedPrizeHitCountPerShotArr.length > 4 && avgHitScoreForLastFewShots <= 2 ) {
+			showBonusInfo(game.rnd.pick(msgEasyLowHits), 3000);
+		} else if ( game.time.now - savedGameTimeAtLastRestartLevel < 5000 && avgHitScoreForLastFewShots > 2 &&
+					avgHitCountForLastFewShots >= 1 && savedPrizeHitCountPerShotArr.length === 2 ) {
+			showBonusInfo("Not A Bad Start", 3000);
 		}
+		
 	}
 
 	// ==
@@ -1066,6 +1163,7 @@ function fireButtonPressed() {
 		laserTimerEvent = game.time.events.loop(100, laserTimerEventCallback, this);
 		if ( debug != 1 ) totalHealthShooter -= 1;
 	}
+
 	if ( r.prizeArr.length > 0 ) {
 		//timeToLaunchTimeBomb = game.time.now + 6000;
 
@@ -1396,12 +1494,15 @@ function restartGame() {
 				game.time.events.remove(gameLevelTimerEvent);
 		}
 		gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
+		timeMarkerShuffleAllReflectors = game.time.now + 60000;
 		timeMarkerMoveBlueSquares = game.time.now + 1000;
+		timeMarkerShuffleBlueReflectors = game.time.now + Math.random()*5000 + 25000;
 		timeMarkerMovePrizes = game.time.now + 2000;
 		timeMarkerMoveTimeBomb = game.time.now + 1000;
 		timeToLaunchTimeBomb = game.time.now + timeBombIntervalNextBombLaunch();
 		timeMarkerTweakTriangles = game.time.now + 2000;
 		timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxesAfterGameStart();
+		timeMarkerCheckIfLaserFiredRecently = game.time.now + Math.random()*3000 + 3000;
 		
 	}, this);
 
@@ -1436,6 +1537,8 @@ function restartLevel() {
 	setTextRight( scoreText, totalPrizeHits.toString() );
 	setTextRight( timerText, gameLevelTimer.toString() );
 	timerText.alpha = 1;
+
+	resetGamePlayStats();
 
 }
 
@@ -2418,11 +2521,14 @@ function scrambleAllObjects() {
 		// });
 		// create new arrangements
 		allGridObjectsArr.forEach(function (b) {
-			if ( b.alive ) {
-				var point = findEmptyGridLocation();
-				b.x = point.x;
-				b.y = point.y;
-			}
+			var point = findEmptyGridLocation();
+			b.x = point.x;
+			b.y = point.y;
+			// if ( b.alive ) {
+			// 	var point = findEmptyGridLocation();
+			// 	b.x = point.x;
+			// 	b.y = point.y;
+			// }
 		});
 }
 
@@ -2729,15 +2835,46 @@ function laserHitAllRedBoxes() {
 
 }
 
+function shuffleAllReflectors() {	
+
+	savedGameTime = game.time.now;
+	allGridObjectsArr.forEach(function(b) {
+		//b.alive = false;
+		game.add.tween(b.scale).to({x:0,y:0}, 500, Phaser.Easing.Linear.None, true)
+			.onComplete.add( function() {
+				// b.visible = false;
+				// b.scale.setTo(0,0);
+				scrambleAllObjects();
+				game.add.tween(b.scale).to({x:1,y:1}, 500, Phaser.Easing.Linear.None, true)
+					.onComplete.add(function(){ 
+						//b.alive = true; 
+						savedGameTime = 0;
+					});
+			} );
+	}, this);
+	
+	// game.time.events.add(500, function(){
+	// 	timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
+	// 	continueRegularGamePlay();
+	// }, this);
+
+}
+
+var bonusInfoTween = null;
 function showBonusInfo(txt, duration) {
-	console.log("showBonusInfo: txt=",txt);
+	//console.log("showBonusInfo: txt=",txt);
+	if ( gameOver || shooterDead || gameLevelTimer <= 3 ) return;
+	if ( bonusInfoTween ) {
+		bonusInfoTween.stop();
+		bonusInfoTween = null;
+	}
 	setTextCenter(bonusText, txt);
 	bonusInfoGroup.visible = true;
 	bonusInfoGroup.alpha = 1;
-	game.add.tween(bonusInfoGroup).to({alpha:0}, duration ? duration : 1000, Phaser.Easing.Linear.None, true)
-		.onComplete.add( function(){ 
-			bonusInfoGroup.visible = false; 
-		} );
+	bonusInfoTween = game.add.tween(bonusInfoGroup).to({alpha:0}, duration ? duration : 1000, Phaser.Easing.Linear.None, true);
+	bonusInfoTween.onComplete.add( function(){ 
+		bonusInfoGroup.visible = false; 
+	} );
 }
 
 function continueRegularGamePlay() {
@@ -3064,6 +3201,45 @@ function timeBombExplodeCallback( timeBombSprite ) {
 		});
 }
 
+// ==
+
+function resetGamePlayStats() {
+	savedGameTimeAtLastRestartLevel = game.time.now;
+	savedGameTimeAtLastPrizeHit = 0; //game.time.now;
+	savedGameTimeAtLastLaserFiring = 0; //game.time.now;
+	savedPrizeHitCountPerShotArr = [];
+	savedPrizeHitScorePerSuccessfulShotArr = [];
+}
+
+function avgHitCount( numLastShots ) {
+	//savedPrizeHitCountPerShotArr.push( r.prizeArr.length );
+	if ( savedPrizeHitCountPerShotArr.length === 0 ) return 0;
+	var totalHits = 0;
+	var count = 0;
+	for ( var i=savedPrizeHitCountPerShotArr.length-1; i>=0; i-- ) {
+		totalHits += savedPrizeHitCountPerShotArr[i];
+		count += 1;
+		if ( count >= numLastShots ) {
+			break;
+		}
+	}
+	return totalHits / count; //count will not be zero!
+}
+
+function avgHitScore( numLastShots ) {
+	//savedPrizeHitCountPerShotArr.push( r.prizeArr.length );
+	if ( savedPrizeHitScorePerSuccessfulShotArr.length === 0 ) return 0;
+	var totalHitScore = 0;
+	var count = 0;
+	for ( var i=savedPrizeHitScorePerSuccessfulShotArr.length-1; i>=0; i-- ) {
+		totalHitScore += savedPrizeHitScorePerSuccessfulShotArr[i];
+		count += 1;
+		if ( count >= numLastShots ) {
+			break;
+		}
+	}
+	return totalHitScore / count; //count will not be zero!
+}
 
 // finally
 game.state.add('main', game_state.main);

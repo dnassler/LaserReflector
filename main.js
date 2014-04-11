@@ -1410,8 +1410,14 @@ function gameLevelTimeout() {
 	game.time.events.add(Phaser.Timer.SECOND*2, function () {
 		shooter1.visible = false;
 		gameOverlayTextGroup.visible = true;
+		gameOverlayText.visible = true;
 		gameplayObjectsGroup.visible = false;
 	}, this);
+
+	game.time.events.add(Phaser.Timer.SECOND*20, function () {
+		gameOverlayText.visible = false;
+		finalScoreText.visible = false;
+	});
 
 	timeMarkerGameOver = game.time.now + 2000;
 

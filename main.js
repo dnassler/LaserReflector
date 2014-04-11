@@ -174,6 +174,8 @@ var savedGameTime = 0;
 var savedGameTimeAtLastRestartLevel = 0;
 var savedGameTimeAtLastPrizeHit = 0;
 var savedGameTimeAtLastLaserFiring = 0;
+var savedGameTimeAtLastComment = 0;
+var savedGameTimeAtLastCommentOfType = {};
 var savedPrizeHitCountPerShotArr = [];
 var savedPrizeHitScorePerSuccessfulShotArr = [];
 
@@ -190,7 +192,9 @@ var msgDie1BounceWithoutPrizeArr = ["You Can Do Better!", "Look Further Ahead!",
 var msgEasyLowHits = ["Go For More!", "Go Big Or Go Home!", "Little More Effort!", "Why Not Be Daring?", "Take A Risk!"];
 var msgRiskyGood = ["I Like!", "Interesting!", "Bravo!", "Pretty Good!", "Good Stuff!"];
 var msg2BouncesOkay = ["That Was O.K.", "Not Bad, My Friend", "You Will Do Well", "I'm Liking Your Style.", "I See Skill"];
-var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Don't Worry...", "Relax But Act!", "Fire That Laser!", "Don't Just Observe", "Take Action.", "Don't Be So Passive."];
+var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Don't Worry...", "Relax But Act!", "Fire That Laser!", "Don't Just Observe", "Take Action.", "Don't Be So Passive.", "Is There A Pattern?"];
+//var msgNoShotsRecently = ["Is There A Pattern?"];
+var msgShootingNoHits = ["Having Fun?", "Cool Your Jets!", "Don't Waste Laser Power!", "Relax A Bit!", "You Like That Laser?", "Calm Down, My Friend", "Try Harder, Won't You?"];
 
 window.addEventListener('resize', function(event){
 	resizeGame();
@@ -1096,6 +1100,7 @@ function fireButtonPressed() {
 	var avgHitCountForLastFewShots = avgHitCount( 4 ); //check avg for the last 4 laser firings
 	var avgHitScoreForLastFewShots = avgHitScore( 4 ); //check avg score increment for the last 4 laser shots with hits
 	var timeSinceLastFiring = game.time.now - savedGameTimeAtLastLaserFiring;
+	var timeSinceLastComment = game.time.now - savedGameTimeAtLastComment;
 	var numPrizesHit = r.prizeArr.length;
 	var countTimeBombPrizeHit = 0;
 
@@ -1149,10 +1154,12 @@ function fireButtonPressed() {
 		} else if ( numPrizesHit === 0 ) {
 			if ( savedPrizeHitCountPerShotArr.length > 4 ) {
 				if ( avgHitCountForLastFewShots === 0 ) {
-					if ( timeSinceLastFiring < 1000 ) {
-						showBonusInfo("Having Fun?", 2000);
-					} else if ( timeSinceLastFiring < 5000 ) {
-						showBonusInfo("Try Harder, Won't You?",3000);
+					if ( timeSinceLastCommentOfType("NoHits") > 3000 ) {
+						if ( timeSinceLastFiring < 200 ) {
+							showBonusInfo(game.rnd.pick(msgShootingNoHits), 3000, "NoHits");
+						// } else if ( timeSinceLastFiring < 5000 ) {
+						// 	showBonusInfo("Try Harder, Won't You?", 3000, "NoHits");
+						}
 					}
 				} else if ( avgHitCountForLastFewShots >= 1 ) {
 					//showBonusInfo("Cool Your Jets!", 2000);
@@ -2929,7 +2936,7 @@ function laserHitAllRedBoxes() {
 	game.time.events.add(1500, function(){
 		hideRedBoxPrizes();
 		timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
-		showBonusInfo("+100 POINTS!");
+		showBonusInfo("+100 POINTS!",3000);
 		continueRegularGamePlay();
 	}, this);
 
@@ -3017,15 +3024,26 @@ function endingSequenceAllReflectors() {
 
 }
 
+function timeSinceLastCommentOfType( type ) {
+	if ( !savedGameTimeAtLastCommentOfType[type] ) {
+		return 1000000;
+	}
+	return game.time.now - savedGameTimeAtLastCommentOfType[type];
+}
+
 var bonusInfoTween = null;
-function showBonusInfo(txt, duration) {
+function showBonusInfo(txt, duration, type) {
 	//console.log("showBonusInfo: txt=",txt);
+	savedGameTimeAtLastComment = game.time.now;
+	if ( type ) {
+		savedGameTimeAtLastCommentOfType[type] = game.time.now;
+	}
 	if ( gameOver || shooterDead || gameLevelTimer <= 3 ) return;
 	if ( bonusInfoTween ) {
 		bonusInfoTween.stop();
 		bonusInfoTween = null;
 	}
-	setTextCenter(bonusText, txt);
+	setTextCenter(bonusText, txt, true, true);
 	bonusInfoGroup.visible = true;
 	bonusInfoGroup.alpha = 1;
 	bonusInfoTween = game.add.tween(bonusInfoGroup).to({alpha:0}, duration ? duration : 1000, Phaser.Easing.Linear.None, true);

@@ -254,7 +254,9 @@ game_state.main.prototype = {
 		game.load.spritesheet('greenBox10', createSpritesheetPrize10Points(), gridSize, gridSize);
 		game.load.spritesheet('greenBox10time', createSpritesheetPrize10Seconds(), gridSize, gridSize);
 
-		game.load.image('redBox', createSpritesheetPrizeUnlockChallenge1() );
+		//game.load.image('redBox', createSpritesheetPrizeUnlockChallenge1() );
+		game.load.spritesheet('redBox', createSpritesheetPrizeUnlockChallenge1(), gridSize, gridSize);
+
 		// game.load.image('greenBox10', "assets/greenBox10.png");
 		// game.load.image('greenBox10time', "assets/greenBox10time.png");
 
@@ -483,6 +485,7 @@ game_state.main.prototype = {
 		redBoxGroup = game.add.group();
 		for ( var i=0; i<3; i++ ) {
 			var r = createGameElement("redBox").kill();
+			r.animations.add("basic", null, 4, true);
 			r.prizePoints = 1;
 			redBoxGroup.add( r );
 			redBoxArr.push( r );
@@ -2781,12 +2784,48 @@ function createSpritesheetPrizeUnlockChallenge1() {
 	var pw = prizeWidth;
 	var ph = prizeWidth;
 
-	var bmd = game.add.bitmapData( fw, fh );
+	var bmd = game.add.bitmapData( fw*5, fh );
 	var ctx = bmd.context;
 
 	ctx.fillStyle = "#B22222"; //firebrick
 	ctx.translate(fw/2,fh/2);
 	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#B22222"; //firebrick
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	// ctx.save();
+	// ctx.fillStyle = "#FF0000"; //"rgba(255,0,0,0.25)"; //red
+	// ctx.globalAlpha = 0.25;
+	// ctx.fillRect(-p2/2,-ph/2,pw,ph);
+	// ctx.restore();
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#FF0000"; //firebrick
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	// ctx.save();
+	// ctx.fillStyle = "#FF0000"; //"rgba(255,0,0,0.25)"; //red
+	// ctx.globalAlpha = 0.5;
+	// ctx.fillRect(-p2/2,-ph/2,pw,ph);
+	// ctx.restore();
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#B22222"; //firebrick
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	// ctx.save();
+	// ctx.fillStyle = "#FF0000"; //"rgba(255,0,0,0.25)"; //red
+	// ctx.globalAlpha = 0.75;
+	// ctx.fillRect(-p2/2,-ph/2,pw,ph);
+	// ctx.restore();
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#FF0000"; //firebrick
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+	// ctx.save();
+	// ctx.fillStyle = "#FF0000"; //"rgba(255,0,0,0.25)"; //red
+	// ctx.globalAlpha = 1;
+	// ctx.fillRect(-p2/2,-ph/2,pw,ph);
+	// ctx.restore();
 
 	return bmd.canvas.toDataURL();
 }
@@ -2823,6 +2862,7 @@ function showRedBoxPrizes() {
 			.onComplete.add( function() {
 					p.wasHit = false;
 					p.alpha = 1;
+					p.play("basic");
 			});
 		}, this );
 }

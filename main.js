@@ -2784,11 +2784,15 @@ function createSpritesheetPrizeUnlockChallenge1() {
 	var pw = prizeWidth;
 	var ph = prizeWidth;
 
-	var bmd = game.add.bitmapData( fw*5, fh );
+	var bmd = game.add.bitmapData( fw*6, fh );
 	var ctx = bmd.context;
 
 	ctx.fillStyle = "#B22222"; //firebrick
 	ctx.translate(fw/2,fh/2);
+	ctx.fillRect(-pw/2,-ph/2,pw,ph);
+
+	ctx.translate(fw,0);
+	ctx.fillStyle = "#B22222"; //firebrick
 	ctx.fillRect(-pw/2,-ph/2,pw,ph);
 
 	ctx.translate(fw,0);

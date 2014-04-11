@@ -180,13 +180,13 @@ var savedPrizeHitScorePerSuccessfulShotArr = [];
 var msgDieHardArr = ["That's Unfortunate!", "You Can't Win Them All!", "Ouch!!!", "Oh Well!"];
 var msgDieEasyArr = ["Try Harder!", "Were You Even Looking?", "Come On!", "Are You Sleeping OK?", "Don't You Care?"];
 var msgDieEasyWithPrize = ["Are You Distracted?", "Look Beyond Your Target!", "Be Careful!"];
-var msgDieEasyWithTimeBomb = ["I Guess You Meant To Do That!", "Sacrificed A Life!", "So Sad!"]
-var msgDie1BounceWithPrizeArr = ["You Should Have Seen That Coming!", "Be More Careful!", "You're Silly!","Was It Worth It?"];
+var msgDieEasyWithTimeBomb = ["You Meant That?", "Sacrificed A Life!", "So Sad!"]
+var msgDie1BounceWithPrizeArr = ["Didn't You See That?", "Be More Careful!", "You're Silly!","Was It Worth It?"];
 var msgDie1BounceWithoutPrizeArr = ["You Can Do Better!", "Look Further Ahead!", "Don't Be Silly!"];
-var msgEasyLowHits = ["Go For More!", "Go Big Or Go Home!", "Use A Little More Effort!", "Why Not Be Daring?", "Take A Risk!"];
-var msgRiskyGood = ["Risky Shooting But I Like!", "Interesting!", "Bravo!", "Pretty Good!", "Good Stuff!"];
-var msg2BouncesOkay = ["That Was O.K.", "Not Bad, My Friend", "I See A Good Future For You", "I'm Liking Your Style.", "I See Skill"];
-var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Don't Worry, It's Just A Game", "Relax But Act!", "Fire That Laser!", "Don't Just Be An Observer", "Take Action.", "Don't Be So Passive."];
+var msgEasyLowHits = ["Go For More!", "Go Big Or Go Home!", "Little More Effort!", "Why Not Be Daring?", "Take A Risk!"];
+var msgRiskyGood = ["I Like!", "Interesting!", "Bravo!", "Pretty Good!", "Good Stuff!"];
+var msg2BouncesOkay = ["That Was O.K.", "Not Bad, My Friend", "You Will Do Well", "I'm Liking Your Style.", "I See Skill"];
+var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Don't Worry...", "Relax But Act!", "Fire That Laser!", "Don't Just Observe", "Take Action.", "Don't Be So Passive."];
 
 window.addEventListener('resize', function(event){
 	resizeGame();

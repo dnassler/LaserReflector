@@ -416,7 +416,8 @@ game_state.main.prototype = {
 				s.saveShapeOriginalPositionY = s.y;
 				s.isReflectorBeingDragged = true;
 			});
-			r.events.onDragStop.add(fixSnapLocationReflector);	
+			r.events.onDragStop.add(fixSnapLocationReflector);
+			r.gameTimeOfLastManualMove = 0;
 
 			//r.events.onInputUp.add(clickOnTriangleReflectorListener, this);	
 			triangleGroupArr.push( r );
@@ -801,7 +802,7 @@ game_state.main.prototype = {
 		}
 
 		if ( game.time.now > timeMarkerTweakTriangles ) {
-			updateObjectPositions( triangleGroupArr );
+			updateObjectPositions( triangleGroupArr, false, game.rnd.integerInRange(1,5) );
 			timeMarkerTweakTriangles = game.time.now + Math.random()*5000 + 2000;
 		}
 
@@ -966,6 +967,8 @@ function createGameElement( shapeName, canRotate, frameNum ) {
 function fixSnapLocationReflector( reflectorSprite ) {
 	// this function is called when a triangle that is being dragged is "dropped"
 	reflectorSprite.isReflectorBeingDragged = false;
+	reflectorSprite.gameTimeOfLastManualMove = game.time.now;
+
 	var toXY = snapToShapeGrid( {x:reflectorSprite.x, y:reflectorSprite.y} );
 	var toX = toXY.x;
 	var toY = toXY.y;
@@ -2442,19 +2445,41 @@ function updateSingleObjectPosition( b ) {
 }
 
 // this function mischeiviously changes the locations of some or all of the deadly blue squares
-function updateObjectPositions( objectsToMoveArr, allAlive ) {
+// if allAlive is true then all objects in the array will be moved
+// if allAlive is false and numObjects is specified then only that number of objects will be moved
+// the default is for only one object from the objectsToMoveArr will be moved
+function updateObjectPositions( objectsToMoveArr, allAlive, numObjects ) {
 	if ( debug!==0 ) return;
 	//if ( savedGameTime !== 0 ) return;
+	
+	// if an object has been repositioned manually recently then do not consider it as
+	// a candidate to be moved randomly
+	var objsNotMovedRecently = [];
+	objectsToMoveArr.forEach(function(obj) {
+		if ( !obj.gameTimeOfLastManualMove || game.time.now - obj.gameTimeOfLastManualMove > 15000 ) {
+			objsNotMovedRecently.push( obj );
+		}
+	});
+
 	if ( allAlive ) {
-		objectsToMoveArr.forEach( function(s) {
+		objsNotMovedRecently.forEach( function(s) {
 			if ( s.alive && !s.wasHit ) {
 				// the wasHit property is set on prizes and timeBomb sprites 
 				// when hit by the laser or when they explode
 				updateSingleObjectPosition( s );
 			}
 		});
+	} else if ( numObjects && numObjects > 1 ) {
+		if ( numObjects > 0 ) {
+			var objRemainingArr = objsNotMovedRecently.slice();
+			for ( var i=0; i<objsNotMovedRecently.length; i++ ) {
+				var rndObj = Phaser.Math.removeRandom( objRemainingArr );
+				updateSingleObjectPosition( rndObj );
+				if ( i === numObjects-1 ) break;
+			}
+		}
 	} else {
-		var b = Phaser.Math.getRandom( objectsToMoveArr );
+		var b = Phaser.Math.getRandom( objsNotMovedRecently );
 		updateSingleObjectPosition( b );
 	}
 }

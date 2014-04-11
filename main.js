@@ -330,7 +330,7 @@ game_state.main.prototype = {
 		audioSlidingTriangle = game.add.audio('slidingTriangle',0.25,false);
 
 		audioLaserFired = game.add.audio('laserFired',0.75,false);
-		audioShooterDies = game.add.audio('shooterDies',0.3,false);
+		audioShooterDies = game.add.audio('shooterDies',1,false);
 		audioPrizeHit = game.add.audio('prizeHit',0.75,false);
 
 		audioGameStart = game.add.audio('gameStart',0.75,false);
@@ -1411,8 +1411,11 @@ function gameLevelTimeout() {
 	finalScoreText.setText( totalScore );
 	game.add.tween(finalScoreText).to({y:game.world.centerY}, 1000, Phaser.Easing.Back.Out, true);
 	
-	game.time.events.add(Phaser.Timer.SECOND*2, function () {
+	endingSequenceAllReflectors();
+
+	game.time.events.add(Phaser.Timer.SECOND*5, function () {
 		shooter1.visible = false;
+		finalScoreText.visible = false;
 		gameOverlayTextGroup.visible = true;
 		gameOverlayText.visible = true;
 		gameplayObjectsGroup.visible = false;
@@ -1470,6 +1473,9 @@ function restartGame() {
 
 	gameOver = false;
 
+	timeMarkerShuffleAllReflectors = 0;
+	savedGameTime = 0;
+
 	removeActiveTimers();
 	removeAndKillAllTimeBombEvents();
 	scrambleAllObjects();
@@ -1494,21 +1500,25 @@ function restartGame() {
 	setTextRight( timerText, gameLevelTimer.toString() );
 	timerText.alpha = 1;
 
-	//gameStartingText.setText("GET READY!\n\n3");
-	setTextCenter( gameStartingText, "GET READY!\n\n3", true, true);
-	gameStartingText.visible = true;
+	// ==
+	startupSequenceAllReflectors();
 
+	//gameStartingText.setText("GET READY!\n\n3");
 	game.time.events.add(Phaser.Timer.SECOND, function () {
+		setTextCenter( gameStartingText, "GET READY!\n\n3", true, true);
+		gameStartingText.visible = true;
+	}, this);
+	game.time.events.add(Phaser.Timer.SECOND*2, function () {
 			//gameStartingText.setText("GET READY!\n\n2");
 			setTextCenter( gameStartingText, "GET READY!\n\n2", true, true);
 	}, this);
-	game.time.events.add(Phaser.Timer.SECOND*2, function () {
+	game.time.events.add(Phaser.Timer.SECOND*3, function () {
 			//gameStartingText.setText("GET READY!\n\n1");
 			setTextCenter( gameStartingText, "GET READY!\n\n1", true, true);
 	}, this);
 
 	// maybe put all of the below logic in timer to go after 3 seconds
-	game.time.events.add(Phaser.Timer.SECOND*3, function() {
+	game.time.events.add(Phaser.Timer.SECOND*4, function() {
 		// play sound
 		audioGameStart.play();
 
@@ -2903,6 +2913,63 @@ function shuffleAllReflectors() {
 	// 	timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
 	// 	continueRegularGamePlay();
 	// }, this);
+
+}
+
+function startupSequenceAllReflectors() {	
+
+	savedGameTime = game.time.now;
+	allGridObjectsArr.forEach(function(b) {
+		//b.alive = false;
+
+		b.alpha = 0;
+		b.scale.setTo(6,6);
+
+		game.add.tween(b).to({alpha:1}, 1000, Phaser.Easing.None, true);
+
+		game.add.tween(b.scale).to({x:1,y:1}, 1000, Phaser.Easing.Linear.None, true)
+			.onComplete.add( function() {
+				savedGameTime = 0;
+				// b.visible = false;
+				// b.scale.setTo(0,0);
+				//scrambleAllObjects();
+				// game.add.tween(b.scale).to({x:1,y:1}, 500, Phaser.Easing.Linear.None, true)
+				// 	.onComplete.add(function(){ 
+				// 		//b.alive = true; 
+				// 		savedGameTime = 0;
+				// 	});
+			} );
+	}, this);
+
+}
+
+function endingSequenceAllReflectors() {	
+
+	savedGameTime = game.time.now;
+	allGridObjectsArr.forEach(function(b) {
+		//b.alive = false;
+
+		//b.alpha = 0;
+		//b.scale.setTo(6,6);
+
+		game.add.tween(b).to({alpha:0}, 1000, Phaser.Easing.None, true);
+
+		game.add.tween(b.scale).to({x:6,y:6}, 1000, Phaser.Easing.Linear.None, true)
+			.onComplete.add( function() {
+				// b.visible = false;
+				game.time.events.add(5000, function(){
+					savedGameTime = 0;
+					b.scale.setTo(1,1);
+					b.alpha = 1;
+				}, this);
+				//scrambleAllObjects();
+				// game.add.tween(b.scale).to({x:1,y:1}, 500, Phaser.Easing.Linear.None, true)
+				// 	.onComplete.add(function(){ 
+				// 		//b.alive = true; 
+				// 		savedGameTime = 0;
+				// 	});
+			} );
+	}, this);
 
 }
 

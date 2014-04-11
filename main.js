@@ -177,6 +177,10 @@ var savedGameTimeAtLastLaserFiring = 0;
 var savedPrizeHitCountPerShotArr = [];
 var savedPrizeHitScorePerSuccessfulShotArr = [];
 
+// the following array holds some timers that may be used in the after 
+// game/pre-game sequence but when the game is started these must be stopped
+//var nonPlayModeTimersActiveArr = [];
+
 var msgDieHardArr = ["That's Unfortunate!", "You Can't Win Them All!", "Ouch!!!", "Oh Well!"];
 var msgDieEasyArr = ["Try Harder!", "Were You Even Looking?", "Come On!", "Are You Sleeping OK?", "Don't You Care?"];
 var msgDieEasyWithPrize = ["Are You Distracted?", "Look Beyond Your Target!", "Be Careful!"];
@@ -1414,10 +1418,19 @@ function gameLevelTimeout() {
 		gameplayObjectsGroup.visible = false;
 	}, this);
 
+	// the following timer(s) must be removed when the next game is started
+	// nonPlayModeTimersActiveArr.push( game.time.events.add(Phaser.Timer.SECOND*20, function () {
+	// 	gameOverlayText.visible = false;
+	// 	finalScoreText.visible = false;
+	// }) );
 	game.time.events.add(Phaser.Timer.SECOND*20, function () {
 		gameOverlayText.visible = false;
 		finalScoreText.visible = false;
-	});
+		game.time.events.loop(Phaser.Timer.SECOND*10, function () {
+			gameOverlayText.visible = !gameOverlayText.visible;
+		});
+	})
+	
 
 	timeMarkerGameOver = game.time.now + 2000;
 
@@ -1456,6 +1469,8 @@ function isShowingIntroInfo() {
 function restartGame() {
 
 	gameOver = false;
+
+	removeActiveTimers();
 	removeAndKillAllTimeBombEvents();
 	scrambleAllObjects();
 
@@ -3270,6 +3285,13 @@ function avgHitScore( numLastShots ) {
 		}
 	}
 	return totalHitScore / count; //count will not be zero!
+}
+
+function removeActiveTimers() {
+	// nonPlayModeTimersActiveArr.forEach( function (t) {
+	// 	game.time.events.remove( t );
+	// });
+	game.time.events.removeAll();
 }
 
 // finally

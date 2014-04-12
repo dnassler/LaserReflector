@@ -193,6 +193,12 @@ var msgEasyLowHits = ["Go For More!", "Go Big Or Go Home!", "Little More Effort!
 var msgRiskyGood = ["I Like!", "Interesting!", "Bravo!", "Pretty Good!", "Good Stuff!"];
 var msg2BouncesOkay = ["That Was O.K.", "Not Bad, My Friend", "You Will Do Well", "I'm Liking Your Style.", "I See Skill"];
 var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Don't Worry...", "Relax But Act!", "Fire That Laser!", "Don't Just Observe", "Take Action.", "Don't Be So Passive.", "Is There A Pattern?"];
+
+// <<<<3 NOTE the following 3 are not yet used... need to add logic to check for appropriate conditions
+var msgDieAfterNoShotsRecently = ["Sorry!!!","Oh Well...","That Can Happen...","Watchout Next Time!"];
+var msgDieAfterRiskyGood = ["Good Effort!", "Stay Sharp!", "It's Tough I Know."];
+var msgDieAfter2BouncesOkay = ["Life Is Unpredictable...", "Keep Trying!"];
+
 //var msgNoShotsRecently = ["Is There A Pattern?"];
 var msgShootingNoHits = ["Having Fun?", "Cool Your Jets!", "Don't Waste Laser Power!", "Relax A Bit!", "You Like That Laser?", "Calm Down, My Friend", "Try Harder, Won't You?"];
 
@@ -1441,8 +1447,8 @@ function gameLevelTimeout() {
 		finalScoreText.visible = false;
 		game.time.events.loop(Phaser.Timer.SECOND*10, function () {
 			gameOverlayText.visible = !gameOverlayText.visible;
-		});
-	})
+		}, this);
+	}, this);
 	
 
 	timeMarkerGameOver = game.time.now + 2000;
@@ -1666,9 +1672,12 @@ function drawLaserFrom( x0, y0 ) {
 	// on the number of bounces needed to reach them
 	var hitScore = 0;
 	var prizePointsForSegment = 0;
-	
-	while ( !calcuatedLineSegmentInfo || !calcuatedLineSegmentInfo.isLastSegment ) {
+	var failSafeCount = 0;
+
+	while ( (!calcuatedLineSegmentInfo || !calcuatedLineSegmentInfo.isLastSegment) && failSafeCount < 200 ) {
 		
+		failSafeCount += 1;
+
 		if ( debug == 1 ) console.log(
 			"drawLaserFrom: in while, "
 			+ "numLaserBounces="+numLaserBounces
@@ -1842,7 +1851,7 @@ function calcLineSegment( direction, x0, y0 ) {
 	var r = {x0:x0, y0:y0, isReflectingBack:false, isLastSegment:true};
 	var spriteCollide = firstSpriteHit( direction, x0, y0 );	
 	if ( spriteCollide ) {
-		console.log("calcLineSegment: sprite found for line segment! sprite.x="+spriteCollide.x+", sprite.y="+spriteCollide.y+", sprite.angle="+spriteCollide.angle);
+		if (debug===1) console.log("calcLineSegment: sprite found for line segment! sprite.x="+spriteCollide.x+", sprite.y="+spriteCollide.y+", sprite.angle="+spriteCollide.angle);
 		var hitInfo = calcHitPoint( direction, spriteCollide, x0, y0 );
 		r.x1 = hitInfo.x1;
 		r.y1 = hitInfo.y1;
@@ -1919,7 +1928,8 @@ function isPrizeOrShapeOnLine( obj, sw, d, x0, y0, x1, y1 ) {
 			//+ ", isPrizeSearch="+isPrizeSearch
 			);
 	
-	if ( Math.abs(obj.x-x0) < sw/2 && Math.abs(obj.y-y0) < sw/2 ) {
+	//<<<<333
+	if ( Math.abs(obj.x-x0) <= sw/2 && Math.abs(obj.y-y0) <= sw/2 ) {
 		// ignore this "obj" because we are starting our line from within it!
 		if ( debug==1 ) console.log("isPrizeOrShapeOnLine: ignore obj");
 		return false; 
@@ -2152,13 +2162,13 @@ function hitTriangleDiagonal(laserDirection, x0, y0, triangleSprite) {
 	var triangleSpriteHalfWidth = triangleSprite.width / 2;
 	r.laserReflectionDirection = laserReflectionDirection;
 	r.hitPointXY = {x:hx,y:hy};
-	r.reflectingLineInfo = 
-		{
-			x0: diagonalInfo.x0*triangleSpriteHalfWidth+triangleSprite.x, 
-			y0: diagonalInfo.y0*triangleSpriteHalfWidth+triangleSprite.y, 
-			x1: diagonalInfo.x1*triangleSpriteHalfWidth+triangleSprite.x, 
-			y1: diagonalInfo.y1*triangleSpriteHalfWidth+triangleSprite.y
-		};
+	// r.reflectingLineInfo = 
+	// 	{
+	// 		x0: diagonalInfo.x0*triangleSpriteHalfWidth+triangleSprite.x, 
+	// 		y0: diagonalInfo.y0*triangleSpriteHalfWidth+triangleSprite.y, 
+	// 		x1: diagonalInfo.x1*triangleSpriteHalfWidth+triangleSprite.x, 
+	// 		y1: diagonalInfo.y1*triangleSpriteHalfWidth+triangleSprite.y
+	// 	};
 	return r;
 }
 
@@ -2976,7 +2986,7 @@ function startupSequenceAllReflectors() {
 		b.alpha = 0;
 		b.scale.setTo(6,6);
 
-		game.add.tween(b).to({alpha:1}, 1000, Phaser.Easing.None, true);
+		game.add.tween(b).to({alpha:1}, 1000, Phaser.Easing.Linear.None, true);
 
 		game.add.tween(b.scale).to({x:1,y:1}, 1000, Phaser.Easing.Linear.None, true)
 			.onComplete.add( function() {
@@ -3003,15 +3013,19 @@ function endingSequenceAllReflectors() {
 		//b.alpha = 0;
 		//b.scale.setTo(6,6);
 
-		game.add.tween(b).to({alpha:0}, 1000, Phaser.Easing.None, true);
+		game.add.tween(b).to({alpha:0}, 1000, Phaser.Easing.Linear.None, true);
 
 		game.add.tween(b.scale).to({x:6,y:6}, 1000, Phaser.Easing.Linear.None, true)
 			.onComplete.add( function() {
 				// b.visible = false;
-				game.time.events.add(5000, function(){
-					savedGameTime = 0;
-					b.scale.setTo(1,1);
-					b.alpha = 1;
+				game.time.events.add(6000, function(){
+					b.scale.setTo(0,0);
+					game.add.tween(b).to({alpha:1}, 500, Phaser.Easing.Linear.None, true);
+					game.add.tween(b.scale).to({x:1,y:1}, 500, Phaser.Easing.Back.Out, true)
+						.onComplete.add( function() {savedGameTime = 0;} );
+					//savedGameTime = 0;
+					//b.scale.setTo(1,1);
+					//b.alpha = 1;
 				}, this);
 				//scrambleAllObjects();
 				// game.add.tween(b.scale).to({x:1,y:1}, 500, Phaser.Easing.Linear.None, true)
@@ -3020,7 +3034,7 @@ function endingSequenceAllReflectors() {
 				// 		savedGameTime = 0;
 				// 	});
 			} );
-	}, this);
+	});
 
 }
 

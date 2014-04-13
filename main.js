@@ -2885,7 +2885,7 @@ function showRedBoxPrizes() {
 					p.alpha = 1;
 					p.play("basic");
 			});
-		}, this );
+		});
 }
 
 function hideRedBoxPrizes() {
@@ -2929,7 +2929,7 @@ function laserHitAllRedBoxes() {
 				// b.visible = false;
 				// b.scale.setTo(0,0);
 			} );
-	}, this);
+	});
 	prizeGroup.forEachAlive(function(b) {
 		b.alive = false;
 		game.add.tween(b.scale).to({x:0,y:0}, 500, Phaser.Easing.Linear.None, true)
@@ -2938,7 +2938,7 @@ function laserHitAllRedBoxes() {
 				// b.visible = false;
 				// b.scale.setTo(0,0);
 			} );
-	}, this);
+	});
 	
 	// game.time.events.add(1500, function(){
 	// 	savedGameTime=0;
@@ -2948,7 +2948,7 @@ function laserHitAllRedBoxes() {
 		timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
 		showBonusInfo("+100 POINTS!",3000);
 		continueRegularGamePlay();
-	}, this);
+	});
 
 }
 
@@ -2968,7 +2968,7 @@ function shuffleAllReflectors() {
 						savedGameTime = 0;
 					});
 			} );
-	}, this);
+	});
 	
 	// game.time.events.add(500, function(){
 	// 	timeMarkerShowRedBoxes = game.time.now + timeToShowRedBoxes();
@@ -2988,19 +2988,16 @@ function startupSequenceAllReflectors() {
 
 		game.add.tween(b).to({alpha:1}, 1000, Phaser.Easing.Linear.None, true);
 
-		game.add.tween(b.scale).to({x:1,y:1}, 1000, Phaser.Easing.Linear.None, true)
-			.onComplete.add( function() {
+		var tween1 = game.add.tween(b.scale).to({x:1,y:1}, 1000, Phaser.Easing.Linear.None, false)
+			.to({x:0,y:0}, 250, Phaser.Easing.Linear.None, false)
+			.to({x:1,y:1}, 250, Phaser.Easing.Linear.None, false)
+			;
+		tween1.onComplete.add( function() {
 				savedGameTime = 0;
-				// b.visible = false;
-				// b.scale.setTo(0,0);
-				//scrambleAllObjects();
-				// game.add.tween(b.scale).to({x:1,y:1}, 500, Phaser.Easing.Linear.None, true)
-				// 	.onComplete.add(function(){ 
-				// 		//b.alive = true; 
-				// 		savedGameTime = 0;
-				// 	});
-			} );
-	}, this);
+			});
+		tween1.start();
+
+	});
 
 }
 

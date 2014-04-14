@@ -1014,9 +1014,9 @@ function fixSnapLocationReflector( reflectorSprite ) {
 	// var toY = Phaser.Math.snapToFloor( reflectorSprite.y, gridSize ) + halfGridSize + extraHeight/2;
 
 	// check if the snapped to spot is ok to drop to (i.e. there is no existing sprite there that is not itself)
-	console.log("\n\n\nfixSnapLocationReflector: IN reflectorSprite.shapeId="+reflectorSprite.shapeId+", toX="+toX+", toY="+toY);
+	//console.log("\n\n\nfixSnapLocationReflector: IN reflectorSprite.shapeId="+reflectorSprite.shapeId+", toX="+toX+", toY="+toY);
 	var shapeAtXY = hasShapeAtXY(toX,toY);
-	if ( shapeAtXY ) console.log("fixSnapLocationReflector: hasShapeAtXY(toX,toY)="+shapeAtXY.shapeId);
+	//if ( shapeAtXY ) console.log("fixSnapLocationReflector: hasShapeAtXY(toX,toY)="+shapeAtXY.shapeId);
 	
 	var freeLocation;
 	if ( !shapeAtXY || shapeAtXY.shapeId == reflectorSprite.shapeId) {
@@ -1051,7 +1051,7 @@ function isValidGridLocation(x,y, doSnap) {
 
 function fireButtonPressed() {
 
-	console.log("fireButtonPressed IN");
+	if ( debug !== 0 ) console.log("fireButtonPressed IN");
 
 	// since the SPACEBAR is used to start the gameplay (as well as shooting the laser)
 	// we need to do a few checks to decide if we need to restart the game 
@@ -1078,7 +1078,7 @@ function fireButtonPressed() {
 		console.log("fireButtonPressed: game is over or the shooter is dead so ignoring the fire button");
 		return;
 	}
-	console.log("fireButtonPressed: shooter must not be dead. shooterDead="+shooterDead);
+	//console.log("fireButtonPressed: shooter must not be dead. shooterDead="+shooterDead);
 
 	if ( laserFiring ) {
 		stopFiringLaserCallback();
@@ -1095,7 +1095,7 @@ function fireButtonPressed() {
 	//laserLayerTexture1sprite.visible = true;
 	saveShooterVelocityX = shooter1.body.velocity.x;
 	saveShooterVelocityY = shooter1.body.velocity.y;
-	console.log("\n\n\n\n\n\n*************\nfireButtonPressed: setting saveShooterVelocityX="+saveShooterVelocityX+", shooter1.body.velocity.x="+shooter1.body.velocity.x);
+	//console.log("\n\n\n\n\n\n*************\nfireButtonPressed: setting saveShooterVelocityX="+saveShooterVelocityX+", shooter1.body.velocity.x="+shooter1.body.velocity.x);
 
 	shooter1.body.velocity.setTo(0,0);
 
@@ -1108,7 +1108,7 @@ function fireButtonPressed() {
 	// game.physics.velocityFromAngle( theShootingAngle, 400, aBall.body.velocity);
 	var r = drawLaserFrom( x0, y0 );
 
-	console.log("\nfireButtonPressed: after drawLaserFrom\n\n\n");
+	if ( debug !== 0 ) console.log("\nfireButtonPressed: after drawLaserFrom\n\n\n");
 
 	laserLayerSprite1.visible = true;
 	laserLayerSprite1.alpha = 1;
@@ -1391,7 +1391,7 @@ function stopFiringLaserCallback( fireButtonWasReleased ) {
 
 	//1----if ( laserFiring) laserLayerTexture1.render(laserLayerSprite1, {x:0,y:0}, false, true);
 	if ( laserTimerEvent ) {
-		console.log("removing timer event");
+		if ( debug !== 0 ) console.log("removing timer event");
 		game.time.events.remove(laserTimerEvent);
 		laserTimerEvent = null;
 	}
@@ -1403,7 +1403,7 @@ function stopFiringLaserCallback( fireButtonWasReleased ) {
 	//resetObjectPositions( prizeArr );
 
 	if ( !gameOver && !shooterDead ) {
-		console.log("fireButtonReleased: saveShooterVelocityX="+saveShooterVelocityX);
+		if ( debug !== 0 ) console.log("fireButtonReleased: saveShooterVelocityX="+saveShooterVelocityX);
 		if ( saveShooterVelocityX != null ) {
 			shooter1.body.velocity.setTo( saveShooterVelocityX, saveShooterVelocityY );
 		}
@@ -1791,7 +1791,7 @@ function drawLaserFrom( x0, y0 ) {
 	// if (false) laserLayerSprite1.loadTexture(laserLayerBM1);
 	//1----laserLayerTexture1.render(laserLayerSprite1, {x:0,y:0}, true, true);
 
-	console.log("drawLaserFrom: OUT isReflectingBack="+isReflectingBack);
+	if ( debug !== 0 ) console.log("drawLaserFrom: OUT isReflectingBack="+isReflectingBack);
 
 	return {isReflectingBack:isReflectingBack, numLaserBounces:numLaserBounces, hitScore:hitScore, prizeArr:prizeArr, spriteCollideArr:spriteCollideArr, laserPath:laserPath};
 }
@@ -1803,7 +1803,7 @@ function touchListenerOnUp() {
 }
 
 function clickListener() {
-	console.log("\n\nclickListener: IN***");
+	if ( debug !== 0 ) console.log("\n\nclickListener: IN***");
 
 	if (gameOver) {
 		if ( isShowingIntroInfo() ) {
@@ -1859,7 +1859,7 @@ function clickListener() {
 	// 		r.play("safeMode");
 	// 	}
 	// }
-	console.log("clickListener: OUT\n\n\n");
+	if ( debug !== 0 ) console.log("clickListener: OUT\n\n\n");
 }
 
 // given a direction (isUp, isDown, isRight, isLeft) and a co-ordinate
@@ -1870,7 +1870,7 @@ function clickListener() {
 // if isReflectingBack is true then the shooter should get hit
 // if isLastSegment is true then there are no more line segments to calculate
 function calcLineSegment( direction, x0, y0 ) {
-	console.log("calcLineSegment: IN");
+	if ( debug !== 0 ) console.log("calcLineSegment: IN");
 	var r = {x0:x0, y0:y0, isReflectingBack:false, isLastSegment:true};
 	var spriteCollide = firstSpriteHit( direction, x0, y0 );	
 	if ( spriteCollide ) {
@@ -1907,27 +1907,27 @@ function collectPrizesOnLine( d, x0, y0, x1, y1 ) {
 	// 		if ( !isShapeOnPath( d, shape, x0, y0 ) ) {
 	// 			continue;
 	// 		}
-	console.log("collectPrizesOnLine: IN");
+	if ( debug !== 0 ) console.log("collectPrizesOnLine: IN");
 	prizeGroup.forEach(function (prize) {
 		if ( prize.alive && !prize.wasHit && isPrizeOnLine( prize, d, x0, y0, x1, y1 ) ) {
-			console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
+			//if ( debug !== 0 ) console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
 			prizeArr.push( prize );
 		}
 	});
 	redBoxGroup.forEach(function (prize) {
-		console.log("collectPrizesOnLine: redBoxGroup prize.shapeId="+prize.shapeId+", prize.alive="+prize.alive);
+		//console.log("collectPrizesOnLine: redBoxGroup prize.shapeId="+prize.shapeId+", prize.alive="+prize.alive);
 		if ( prize.alive && !prize.wasHit && isPrizeOnLine( prize, d, x0, y0, x1, y1 ) ) {
-			console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
+			//console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
 			prizeArr.push( prize );
 		}
 	});
 	timeBombGroup.forEach(function (prize) {
 		if ( prize.alive && !prize.wasHit && isPrizeOnLine( prize, d, x0, y0, x1, y1 ) ) {
-			console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
+			//console.log("collectPrizesOnLine: found prize x="+prize.x+", y="+prize.y);
 			prizeArr.push( prize );
 		}
 	});
-	console.log("collectPrizesOnLine: OUT  prizeArr.length="+prizeArr.length);
+	//if ( debug !== 0 ) console.log("collectPrizesOnLine: OUT  prizeArr.length="+prizeArr.length);
 	return prizeArr;
 }
 
@@ -2498,13 +2498,13 @@ function updateSingleObjectPosition( b ) {
 				b.x = toXY.x;
 				b.y = toXY.y;
 
-				console.log("updateSingleObjectPosition: completed move, checking if need to move again");
+				if ( debug !== 0 ) console.log("updateSingleObjectPosition: completed move, checking if need to move again");
 				var count = shapeCountAtLocation( newLocationPoint.x, newLocationPoint.y );
 				if ( count > 1 ) {
-					console.log("updateSingleObjectPosition: moving shape again");
+					if ( debug !== 0 ) console.log("updateSingleObjectPosition: moving shape again");
 					updateSingleObjectPosition( b );
 				} else {
-					console.log("updateSingleObjectPosition: did not need to move again")
+					if ( debug !== 0 ) console.log("updateSingleObjectPosition: did not need to move again")
 				}
 			}, this);
 	if ( isShapeTriangle(b) ) {
@@ -2664,7 +2664,7 @@ function scrambleAllObjects() {
 function resetObjectPositions( objectsToMoveArr ) {
 	objectsToMoveArr.forEach( function ( b ) {
 		var point = findEmptyGridLocation();
-		console.log("resetObjectPositions: b.x="+b.x+", b.y="+b.y+", point.x="+point.x+", point.y="+point.y);
+		if ( debug !== 0 ) console.log("resetObjectPositions: b.x="+b.x+", b.y="+b.y+", point.x="+point.x+", point.y="+point.y);
 		b.scale.setTo(1,1);
 		game.add.tween(b)
 			.to({alpha:0}, 500, Phaser.Easing.Linear.None, true)
@@ -2883,7 +2883,7 @@ function timeToShowRedBoxes() {
 
 function showRedBoxPrizes() {
 	if ( isShowingRedBoxes() ) {
-		console.log("showRedBoxPrizes: already showing boxes so ignore request to show them now");
+		if ( debug !== 0 ) console.log("showRedBoxPrizes: already showing boxes so ignore request to show them now");
 		return;
 	}
 	var p;
@@ -2914,14 +2914,14 @@ function showRedBoxPrizes() {
 function hideRedBoxPrizes() {
 	// TODO: should we worry about the case where the red boxes were hit or partially hit with the laser already? <<<<2
 	redBoxArr.forEach( function(p) {
-		console.log("hideRedBoxPrizes: p.shapeId="+p.shapeId);
+		//console.log("hideRedBoxPrizes: p.shapeId="+p.shapeId);
 		p.wasHit = true;
 		p.alive = false;
 		game.add.tween(p).to({alpha:0},500, Phaser.Easing.None, true)
 			.onComplete.add( function() {
 				p.wasHit = false;
 				p.kill();
-				console.log("hideRedBoxPrizes: onComplete p.shapeId="+p.shapeId);
+				//console.log("hideRedBoxPrizes: onComplete p.shapeId="+p.shapeId);
 			});
 	});
 	
@@ -3091,7 +3091,7 @@ function showBonusInfo(txt, duration, type) {
 }
 
 function continueRegularGamePlay() {
-	console.log("\n\n\n\n*******continueRegularGamePlay*********\n\n\n\n");
+	if ( debug !== 0 ) console.log("\n\n\n\n*******continueRegularGamePlay*********\n\n\n\n");
 	reflectorGroup1.forEachDead(function(b) {
 		b.visible = true;
 		b.alive = true;
@@ -3231,18 +3231,18 @@ function timeBombAliveArr() {
 function launchTimeBomb() {
 	if ( gameOver || shooterDead ) return;
 	//if ( savedGameTime !== 0 ) return;
-	console.log("launchTimeBomb?");
+	//console.log("launchTimeBomb?");
 	if ( timeBombGroup.countLiving() >= maxSimultaneousTimeBombs() ) {
-		console.log("too many time bombs in play based on time remaining so skip launch");
+		if ( debug !== 0 ) console.log("too many time bombs in play based on time remaining so skip launch");
 		return;
 	}
-	console.log("********** launchTimeBomb **********");
+	if ( debug !== 0 ) console.log("********** launchTimeBomb **********");
 	var timeBombSprite = timeBombGroup.getFirstDead();
 	if ( timeBombSprite === null ) {
-		console.log("unable to find an available time bomb");
+		if ( debug !== 0 ) console.log("unable to find an available time bomb");
 		return;
 	}
-	console.log("FOUND an available time bomb!!! shapeId="+timeBombSprite.shapeId);
+	if ( debug !== 0 ) console.log("FOUND an available time bomb!!! shapeId="+timeBombSprite.shapeId);
 	var point = findEmptyGridLocation();
 	timeBombSprite.alpha = 0;
 	timeBombSprite.scale.setTo(6,6);
@@ -3299,20 +3299,20 @@ function fadeOutAllTimeBombs() {
 }
 
 function removeAndKillAllTimeBombEvents() {
-	console.log("removeAndKillAllTimeBombEvents: IN");
+	if ( debug !== 0 ) console.log("removeAndKillAllTimeBombEvents: IN");
 	var sprite, shapeId;
 	//var shapeId in timeBombTimerInfo
 	for ( var shapeId in timeBombTimerInfo ) {
-		console.log("timeBomb.shapeId="+shapeId);
+		if ( debug !== 0 ) console.log("timeBomb.shapeId="+shapeId);
 		sprite = timeBombTimerInfo[shapeId];
 		if ( sprite ) {
-			console.log("about to remove time bomb event for shapeId="+shapeId);
+			if ( debug !== 0 ) console.log("about to remove time bomb event for shapeId="+shapeId);
 			removeTimeBombEvent( sprite );
 			sprite.kill();
 		}
 		timeBombTimerInfo[shapeId] = null;
 	}
-	console.log("removeAndKillAllTimeBombEvents: OUT");
+	if ( debug !== 0 ) console.log("removeAndKillAllTimeBombEvents: OUT");
 }
 
 function removeTimeBombEvent( timeBombSprite ) {
@@ -3360,7 +3360,7 @@ function setTimeBombEvent( timeBombSprite, eventType ) {
 	// 	}
 	// }
 
-	console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+",  eventType="+eventType);
+	if ( debug !== 0 ) console.log("timeBomb.shapeId="+timeBombSprite.shapeId+", gameLevelTimer="+gameLevelTimer+",  eventType="+eventType);
 }
 
 function timeBombEventCB( timeBombSprite, eventType ) {

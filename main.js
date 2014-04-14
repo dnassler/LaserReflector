@@ -2994,7 +2994,7 @@ function startupSequenceAllReflectors() {
 
 		var tween1 = game.add.tween(b.scale).to({x:1,y:1}, 1000, Phaser.Easing.Linear.None, false)
 			.to({x:0,y:0}, 250, Phaser.Easing.Linear.None, false)
-			.to({x:1,y:1}, 250, Phaser.Easing.Linear.None, false)
+			.to({x:1,y:1}, 250, Phaser.Easing.Sinusoidal.Out, false)
 			;
 		tween1.onComplete.add( function() {
 				savedGameTime = 0;
@@ -3016,7 +3016,9 @@ function endingSequenceAllReflectors() {
 
 		game.add.tween(b).to({alpha:0}, 1000, Phaser.Easing.Linear.None, true);
 
-		game.add.tween(b.scale).to({x:6,y:6}, 1000, Phaser.Easing.Linear.None, true)
+		game.add.tween(b.scale)
+			.to({x:0,y:0}, 250, Phaser.Easing.Linear.None, true)
+			.to({x:6,y:6}, 1000, Phaser.Easing.Linear.None, false)
 			.onComplete.add( function() {
 				// b.visible = false;
 				game.time.events.add(6000, function(){
@@ -3038,6 +3040,8 @@ function endingSequenceAllReflectors() {
 	});
 
 }
+
+// ==
 
 function timeSinceLastCommentOfType( type ) {
 	if ( !savedGameTimeAtLastCommentOfType[type] ) {

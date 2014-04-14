@@ -191,10 +191,10 @@ var msgDieEasyWithPrize = ["Are You Distracted?", "Look Beyond Your Target!", "B
 var msgDieEasyWithTimeBomb = ["You Meant That?", "So Sad!"]
 var msgDie1BounceWithPrizeArr = ["Didn't You See That?", "Be More Careful!", "Don't Be Lazy!","Was It Worth It?"];
 var msgDie1BounceWithoutPrizeArr = ["You Can Do Better!", "Look Further Ahead!", "Don't Be Slopy!"];
-var msgEasyLowHits = ["Go For More!", "Go Big Or Go Home!", "Little More Effort!", "Why Not Be Daring?", "Take A Risk!"];
+var msgEasyLowHits = ["Go For More!", "Go Big Or Go Home!", "Little More Effort!", "Why Not Be Daring?", "Take A Risk!", "Not Bad But..."];
 var msgRiskyGood = ["I Like!", "Interesting!", "Bravo!", "Pretty Good!", "Good Stuff!", "Awesome!", "Pretty Slick!"];
 var msg2BouncesOkay = ["That Was Not Bad.", "Not Bad, My Friend.", "Doing Well.", "I'm Liking Your Style.", "I See Skill."];
-var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Taking It Easy?", "Fire That Laser!", "Don't Just Observe", "Take Action.", "Aim And Shoot!", "Is There A Pattern?", "Try Moving Triangles...", "Rotate A Triangle..."];
+var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Taking It Easy?", "Fire That Laser!", "Don't Just Observe", "Take Action.", "Aim And Shoot!", "Is There A Pattern?", "Try Moving Triangles...", "Rotate A Triangle...", "Impress Me!"];
 
 // <<<<3 NOTE the following 3 are not yet used... need to add logic to check for appropriate conditions
 var msgDieAfterNoShotsRecently = ["Sorry!!!","Oh Well...","That Can Happen...","Watchout Next Time!"];
@@ -203,7 +203,7 @@ var msgDieAfter2BouncesOkay = ["Life Is Unpredictable...", "Keep Trying!"];
 
 //var msgNoShotsRecently = ["Is There A Pattern?"];
 var msgShootingNoHits = ["Having Fun?", "Cool Your Jets!", "Don't Waste Laser Power!", "Relax A Bit!", "You Like That Laser?", "Calm Down, My Friend", "Try Harder, Won't You?"];
-var msgShootingNoHitsSlow = ["Take Aim Then Fire!", "You Need More Practice!", "You'll Get Better.", "Effort Brings Reward.", "Don't Give Up!","Touch A Blue Box...","Move A Triangle..."];
+var msgShootingNoHitsSlow = ["Take Aim Then Fire!", "You Need More Practice!", "You'll Get Better.", "Effort Brings Reward.", "Don't Give Up!","Touch A Blue Box...","Move A Triangle...", "Impress Me, Come On!"];
 
 window.addEventListener('resize', function(event){
 	resizeGame();

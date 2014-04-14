@@ -37,6 +37,8 @@ var debug=0;
 
 // define globals here
 
+var doneInit = false;
+
 var nextUniqueShapeId = 0;
 
 var gridSize = 100;
@@ -186,13 +188,13 @@ var savedPrizeHitScorePerSuccessfulShotArr = [];
 var msgDieHardArr = ["That's Unfortunate!", "You Can't Win Them All!", "Ouch!!!", "Oh Well!"];
 var msgDieEasyArr = ["Try Harder!", "Were You Even Looking?", "Come On!", "Are You Sleeping OK?", "Don't You Care?"];
 var msgDieEasyWithPrize = ["Are You Distracted?", "Look Beyond Your Target!", "Be Careful!"];
-var msgDieEasyWithTimeBomb = ["You Meant That?", "Sacrificed A Life!", "So Sad!"]
-var msgDie1BounceWithPrizeArr = ["Didn't You See That?", "Be More Careful!", "You're Silly!","Was It Worth It?"];
-var msgDie1BounceWithoutPrizeArr = ["You Can Do Better!", "Look Further Ahead!", "Don't Be Silly!"];
+var msgDieEasyWithTimeBomb = ["You Meant That?", "So Sad!"]
+var msgDie1BounceWithPrizeArr = ["Didn't You See That?", "Be More Careful!", "Don't Be Lazy!","Was It Worth It?"];
+var msgDie1BounceWithoutPrizeArr = ["You Can Do Better!", "Look Further Ahead!", "Don't Be Slopy!"];
 var msgEasyLowHits = ["Go For More!", "Go Big Or Go Home!", "Little More Effort!", "Why Not Be Daring?", "Take A Risk!"];
-var msgRiskyGood = ["I Like!", "Interesting!", "Bravo!", "Pretty Good!", "Good Stuff!"];
-var msg2BouncesOkay = ["That Was O.K.", "Not Bad, My Friend", "You Will Do Well", "I'm Liking Your Style.", "I See Skill"];
-var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Don't Worry...", "Relax But Act!", "Fire That Laser!", "Don't Just Observe", "Take Action.", "Don't Be So Passive.", "Is There A Pattern?"];
+var msgRiskyGood = ["I Like!", "Interesting!", "Bravo!", "Pretty Good!", "Good Stuff!", "Awesome!", "Pretty Slick!"];
+var msg2BouncesOkay = ["That Was Not Bad.", "Not Bad, My Friend.", "Doing Well.", "I'm Liking Your Style.", "I See Skill."];
+var msgNoShotsRecently = ["I'm Waiting...", "Be Bolder, Hmm?", "Don't Be Afraid, Shoot!", "Taking It Easy?", "Fire That Laser!", "Don't Just Observe", "Take Action.", "Aim And Shoot!", "Is There A Pattern?", "Try Moving Triangles...", "Rotate A Triangle..."];
 
 // <<<<3 NOTE the following 3 are not yet used... need to add logic to check for appropriate conditions
 var msgDieAfterNoShotsRecently = ["Sorry!!!","Oh Well...","That Can Happen...","Watchout Next Time!"];
@@ -201,6 +203,7 @@ var msgDieAfter2BouncesOkay = ["Life Is Unpredictable...", "Keep Trying!"];
 
 //var msgNoShotsRecently = ["Is There A Pattern?"];
 var msgShootingNoHits = ["Having Fun?", "Cool Your Jets!", "Don't Waste Laser Power!", "Relax A Bit!", "You Like That Laser?", "Calm Down, My Friend", "Try Harder, Won't You?"];
+var msgShootingNoHitsSlow = ["Take Aim Then Fire!", "You Need More Practice!", "You'll Get Better.", "Effort Brings Reward.", "Don't Give Up!","Touch A Blue Box...","Move A Triangle..."];
 
 window.addEventListener('resize', function(event){
 	resizeGame();
@@ -750,6 +753,9 @@ game_state.main.prototype = {
     	//gameOverlayText.setText("LAZOR REFLEKTOR!!!\n\n\n\nGAME OVER\n\ntouch or press spacebar\nto start");
     	setTextCenter( gameOverlayText, "LAZOR REFLEKTOR!!!\n\n\n\nGAME OVER\n\ntouch screen\nto start");
     	//showIntroInfo();
+
+    	doneInit = true;
+
     }, this);
 
 		// game.time.events.add(1000, function(){
@@ -1046,19 +1052,23 @@ function isValidGridLocation(x,y, doSnap) {
 function fireButtonPressed() {
 
 	console.log("fireButtonPressed IN");
-	laserPathId += 1;
-	if ( laserFiring ) {
-		stopFiringLaserCallback();
-	};
 
 	// since the SPACEBAR is used to start the gameplay (as well as shooting the laser)
 	// we need to do a few checks to decide if we need to restart the game 
 	// or to shoot the laser.
+
 	if ( !gameOver && shooterDead ) {
 		console.log("fireButtonPressed: ignoring because the shooter is dead");
 		return;
 	}
 	if ( gameOver || shooterDead ) {
+		if ( !doneInit ) {
+			// NOTE: the main reason for this check is because there is certain text that is setup
+			// only after a few seconds so that the fonts have had time to load properly. Without this
+			// check the help text, for example, would not be set (i.e. would be empty)
+			console.log("Not initialized completely yet...");
+			return;
+		}
 		if ( game.time.now > timeMarkerGameOver ) {
 			// the user pressed the fire button after a game over occurred after
 			// a preset amount of time
@@ -1070,8 +1080,13 @@ function fireButtonPressed() {
 	}
 	console.log("fireButtonPressed: shooter must not be dead. shooterDead="+shooterDead);
 
+	if ( laserFiring ) {
+		stopFiringLaserCallback();
+	};
+
+	laserPathId += 1;
+
 	laserFiring = true;
-	savedGameTimeAtLastLaserFiring = game.time.now;
 	timeMarkerCheckIfLaserFiredRecently = game.time.now + Math.random()*3000 + 5000;
 
 	// play sound!
@@ -1108,6 +1123,7 @@ function fireButtonPressed() {
 	var avgHitCountForLastFewShots = avgHitCount( 4 ); //check avg for the last 4 laser firings
 	var avgHitScoreForLastFewShots = avgHitScore( 4 ); //check avg score increment for the last 4 laser shots with hits
 	var timeSinceLastFiring = game.time.now - savedGameTimeAtLastLaserFiring;
+	savedGameTimeAtLastLaserFiring = game.time.now;
 	var timeSinceLastComment = game.time.now - savedGameTimeAtLastComment;
 	var numPrizesHit = r.prizeArr.length;
 	var countTimeBombPrizeHit = 0;
@@ -1167,6 +1183,8 @@ function fireButtonPressed() {
 							showBonusInfo(game.rnd.pick(msgShootingNoHits), 3000, "NoHits");
 						// } else if ( timeSinceLastFiring < 5000 ) {
 						// 	showBonusInfo("Try Harder, Won't You?", 3000, "NoHits");
+						} else {
+							showBonusInfo(game.rnd.pick(msgShootingNoHitsSlow), 3000, "NoHits");
 						}
 					}
 				} else if ( avgHitCountForLastFewShots >= 1 ) {
@@ -1433,7 +1451,8 @@ function gameLevelTimeout() {
 	
 	endingSequenceAllReflectors();
 
-	game.time.events.add(Phaser.Timer.SECOND*5, function () {
+	game.time.events.add(Phaser.Timer.SECOND*3, function () {
+		console.log("3 Second timer after game over... should show GAME OVER Text!");
 		shooter1.visible = false;
 		finalScoreText.visible = false;
 		gameOverlayTextGroup.visible = true;

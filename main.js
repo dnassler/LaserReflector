@@ -763,6 +763,8 @@ game_state.main.prototype = {
 		
 		reorientShooterAsNecessary();
 
+		if ( debug !== 0 ) return;
+
 		if ( savedGameTime !== 0 ) {
 			// this means that we are in a special mode such that the usual updates should not occur
 			//TODO: when saveGameTime is reset to 0 and regular game play continues then perhaps all 
@@ -887,7 +889,7 @@ function updateGameLevelTimer() {
 	//console.log("updateGameLevelTimer: IN");
 	if ( gameOver ) return;
 	if ( savedGameTime !== 0 ) return;
-	if ( debug == 1 ) return;
+	if ( debug !== 0 ) return;
 
 	//console.log("updateGameLevelTimer...");
 	gameLevelTimer -= 1;
@@ -1156,7 +1158,7 @@ function fireButtonPressed() {
 		} else if ( r.numLaserBounces >= 2 && r.hitScore > 0 ) {
 			showBonusInfo(game.rnd.pick(msg2BouncesOkay), 3000);
 		} else if ( r.numLaserBounces >= 3 ) {
-			showBonusInfo("Reflecting Lasers Are Fun!", 3000);
+			showBonusInfo("Reflecting Big Time!", 3000);
 		} else if ( numPrizesHit === 0 ) {
 			if ( savedPrizeHitCountPerShotArr.length > 4 ) {
 				if ( avgHitCountForLastFewShots === 0 ) {
@@ -1337,11 +1339,13 @@ function fireButtonPressed() {
 }
 
 function fireButtonReleased() {
-	stopFiringLaserCallback();
+	stopFiringLaserCallback( true );
 }
 
-function stopFiringLaserCallback() {
+function stopFiringLaserCallback( fireButtonWasReleased ) {
 	if ( !laserFiring ) return;
+	if ( debug !== 0 && !fireButtonWasReleased ) return; // skip if this was called from a timeout
+
 	laserFiring = false;
 
 	if ( stopLaserFiringTimerHandle ) {

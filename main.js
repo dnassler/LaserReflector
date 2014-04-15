@@ -1313,10 +1313,12 @@ function fireButtonPressed() {
 	if ( r.spriteCollideArr.length > 0 ) {
 		r.spriteCollideArr.forEach( function(s){
 			if ( s.name !== "boxReflector1" ) {
+				s.gameTimeLaserLastHit = game.time.now;
 				s.tint = 0xFF9999;
 				//game.add.tween(s).to({tint:0xFFFFFF}, 2000, Phaser.Easing.Linear.None, true);
 				game.time.events.add(Phaser.Timer.SECOND * 3, function() {
 					s.tint = 0xFFFFFF;
+					updateSingleObjectPosition( s );
 				}, this);
 
 			}
@@ -2529,11 +2531,25 @@ function updateObjectPositions( objectsToMoveArr, allAlive, numObjects ) {
 	// if an object has been repositioned manually recently then do not consider it as
 	// a candidate to be moved randomly
 	var objsNotMovedRecently = [];
+	//var objsHitRecently = [];
 	objectsToMoveArr.forEach(function(obj) {
 		if ( !obj.gameTimeOfLastManualMove || game.time.now - obj.gameTimeOfLastManualMove > 15000 ) {
+			// if ( !obj.gameTimeLaserLastHit ) {
+			// 	obj.gameTimeLaserLastHit = 0;
+			// }
 			objsNotMovedRecently.push( obj );
 		}
 	});
+
+	// // sort the array so that the objects that were hit most recently are at the top
+	// objsNotMovedRecently.sort(function (a,b) {
+	// 	if ( a.gameTimeLaserLastHit > b.gameTimeLaserLastHit ) {
+	// 		return -1;
+	// 	} else if ( a.gameTimeLaserLastHit === b.gameTimeLaserLastHit ) {
+	// 		return 0;
+	// 	}
+	// 	return 1;
+	// });
 
 	if ( allAlive ) {
 		objsNotMovedRecently.forEach( function(s) {

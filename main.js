@@ -40,6 +40,7 @@ var debug=0;
 var doneInit = false;
 
 var nextUniqueShapeId = 0;
+var currentClickedShape = null;
 
 var gridSize = 100;
 var halfGridSize = gridSize/2;
@@ -438,6 +439,8 @@ game_state.main.prototype = {
 				s.saveShapeOriginalPositionX = s.x;
 				s.saveShapeOriginalPositionY = s.y;
 				s.isReflectorBeingDragged = true;
+				if ( debug === 20140420 ) console.log("s.shapeId=",s.shapeId);
+				currentClickedShape = s;
 			});
 			r.events.onDragStop.add(fixSnapLocationReflector);
 			r.gameTimeOfLastManualMove = 0;
@@ -2215,16 +2218,18 @@ function hitTriangleDiagonal(laserDirection, x0, y0, triangleSprite) {
 // returns the direction of the "normal" of the trianlge's reflecting diagonal 
 function triangleReflectDirection( triangleSprite ) {
 	var r = {up:false,down:false,left:false,right:false};
-	if ( triangleSprite.angle == 0 ) {
+	var a = Phaser.Math.snapToFloor( triangleSprite.angle + 45, 90 ); // round to nearest 90 angle
+	if ( a == 0 ) {
 		r.isUp = true;
 		r.isRight = true;
-	} else if ( triangleSprite.angle == -90 ) {
+	} else if ( a == -90 ) {
 		r.isUp = true;
 		r.isLeft = true;
-	} else if ( triangleSprite.angle == 90 ) {
+	} else if ( a == 90 ) {
 		r.isDown = true;
 		r.isRight = true;
 	} else {
+		// -180 or 180
 		r.isDown = true;
 		r.isLeft = true;
 	}

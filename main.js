@@ -55,7 +55,8 @@ var laserTrailTween;
 var numBlocksVertical;
 var numBlocksHorizontal;
 
-var gameLevelTimerEvent;
+var clockTimer = null;
+//var gameLevelTimerEvent;
 var hideIntroInfoTimer;
 var introInfoGroup;
 var introText;
@@ -306,6 +307,9 @@ game_state.main.prototype = {
 
 		this.game.onPause.add(gamePaused, this);
 		this.game.onResume.add(gameResumed, this);
+
+		clockTimer = game.time.create(false);
+		clockTimer.loop(1000, updateGameLevelTimer, this);
 
 		// ==
 
@@ -1369,6 +1373,8 @@ function stopFiringLaserCallback( fireButtonWasReleased ) {
 	laserFiring = false;
 
 	if ( stopLaserFiringTimerHandle ) {
+		// NOTE: what does this do if the stopFiringLaserCallback was called due to the timeout?
+		// Is this going to mess up the events (including the gameLevelTimerEvent?)
 		game.time.events.remove( stopLaserFiringTimerHandle );
 		stopLaserFiringTimerHandle = null;
 	}
@@ -1439,10 +1445,11 @@ function gameLevelTimeout() {
 
 	removeAndKillAllTimeBombEvents();
 
-	if ( gameLevelTimerEvent ) {
-			game.time.events.remove(gameLevelTimerEvent);
-			gameLevelTimerEvent = null;
-	}
+	// if ( gameLevelTimerEvent ) {
+	// 		game.time.events.remove(gameLevelTimerEvent);
+	// 		gameLevelTimerEvent = null;
+	// }
+	clockTimer.stop(false);
 
 	console.log("************** GAME OVER *****************");
 	// calculate final score based on the number of hits combined with the shooter health
@@ -1517,8 +1524,14 @@ function restartGame() {
 	timeMarkerShuffleAllReflectors = 0;
 	savedGameTime = 0;
 
-	removeActiveTimers();
 	removeAndKillAllTimeBombEvents();
+	removeActiveTimers();
+
+	laserTimerEvent = null;
+	stopLaserFiringTimerHandle = null;
+	hideIntroInfoTimer = null;
+	//gameLevelTimerEvent = null;
+
 	scrambleAllObjects();
 
 	introInfoGroup.visible = false;
@@ -1565,10 +1578,12 @@ function restartGame() {
 
 		gameStartingText.visible = false;
 		restartLevel();
-		if ( gameLevelTimerEvent ) {
-				game.time.events.remove(gameLevelTimerEvent);
-		}
-		gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
+		clockTimer.start();
+		// if ( gameLevelTimerEvent ) {
+		// 		game.time.events.remove(gameLevelTimerEvent);
+		// }
+		// gameLevelTimerEvent = game.time.events.loop(Phaser.Timer.SECOND, updateGameLevelTimer, this);
+
 		timeMarkerShuffleAllReflectors = game.time.now + 60000;
 		timeMarkerMoveBlueSquares = game.time.now + 1000;
 		timeMarkerShuffleBlueReflectors = game.time.now + Math.random()*5000 + 25000;
